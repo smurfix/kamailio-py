@@ -79,7 +79,6 @@ class _sub(_get):
     """
     what_=None
     def _key(self, name):
-        name = kfix(name)
         return f"${self.what_}({name})"
 
     def __getattr__(self, k):
@@ -353,10 +352,10 @@ class HDR(_get):
                 yield (KSR.textopsx.hf_iterator_hname(it),KSR.textopsx.hf_iterator_hbody(it))
         finally:
             KSR.textopsx.hf_iterator_end(it)
-HDR=HDR()
 
     def __delattr__(self,name):
         KSR.textopsx.remove_hf_value(name)
+HDR=HDR()
 
 class _HDRC(_get):
     what_ = "hdrc"
