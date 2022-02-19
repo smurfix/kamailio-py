@@ -13,8 +13,9 @@
 
 import sys
 sys.path.insert(0,"/root/kamailio-py")
-from kamailio import var
+from kamailio import var, thread_state
 from kamailio import log as log_
+from kamailio.trace import trace
 
 from pprint import pformat
 import json
@@ -46,9 +47,7 @@ def mod_init():
     log = logger.info
     return minit(logger)
 
-@log_.trace
 def minit(logger):
-    log("===== from Python mod init")
     return kamailio(logger=logger)
 
 
@@ -58,18 +57,15 @@ class kamailio:
         if logger is None:
             logger = lambda *a: 0
         self.log = logger
-        log('===== kamailio.__init__')
-
 
     # executed when kamailio child processes are initialized
     def child_init(self, rank):
-        log('===== kamailio.child_init(%d)', rank)
-        log_.set_id(rank)
+        thread_state.setup(rank)
         return 0
 
 
     # SIP request routing. Cannot be renamed
-    @log_.trace
+    @trace
     def ksr_request_route(self, msg):
         log("===== request - from kamailio python script")
         log("===== method [%s] r-uri [%s]", KSR.pv.get("$rm"),KSR.pv.get("$ru"))
