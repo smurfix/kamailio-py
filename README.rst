@@ -16,7 +16,7 @@ Installation
 
 Install Kamailio, Python, and this module as usual.
 
-Add this to your ``kamailio.cfg``:
+Add this to your ``kamailio.cfg``::
 
         loadmodule "app_python3.so"
         modparam("app_python3", "load", "/etc/kamailio/router.py")
