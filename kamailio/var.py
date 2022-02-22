@@ -7,8 +7,11 @@ Kamalio data structures (or what passes for them) in a more
 import os
 
 from threading import Lock
+import logging
 
 import KSR
+
+logger = logging.getLogger("V")
 
 class DNSError(RuntimeError):
     def __init__(self, name):
@@ -38,10 +41,13 @@ class PV(_get):
     """
     @staticmethod
     def __getattr__(k):
-        return KSR.pv.get(f"${k}")
+        res = KSR.pv.get(f"${k}")
+        logger.debug("GET %s = %r", k, res)
+        return res
 
     @staticmethod
     def __setattr__(k, v):
+        logger.debug("SET %s = %r", k, v)
         if isinstance(v,int):
             KSR.pv.seti(f"${k}",v)
         else:
@@ -82,7 +88,9 @@ class _sub(_get):
         return f"${self.what_}({name})"
 
     def __getattr__(self, k):
-        return KSR.pv.get(self._key(k))
+        res = KSR.pv.get(self._key(k))
+        logger.debug("GET %s %r = %r", k, self._key(k), res)
+        return res
 
     def __setattr__(self, k, v):
         if isinstance(v,int):
@@ -158,6 +166,12 @@ DSV=DSV()
 
 class DEF(_sub):
     what_="def"
+    def __getattr__(self, k):
+        res = super().__getattr__(k)
+        if res == "":
+            res = True # "ifdef"-style tests
+        return res
+
 DEF=DEF()
 
 class RDIR(_sub):

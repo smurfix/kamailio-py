@@ -89,7 +89,7 @@ def exit(frame, back=True):
         frame = frame.f_back
 
     thread_state.log_level -= 1
-    if limited(1):
+    if limited(0):
         #if not back:
         #    tdebug(frame, "RET",txt)
         return True
