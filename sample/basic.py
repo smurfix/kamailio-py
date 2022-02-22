@@ -30,7 +30,8 @@ FLB_NATB=6
 FLB_NATSIPPING=7
 BAD_AGENTS = {"friendly", "scanner", "sipcli", "sipvicious"}
 
-from config import ip,SRC
+from config import ip,VIA,nr_fix
+SRC = {v[1]:k for k,v in vars(ip).items() if k[0] != "_"} 
 
 # Global info logger, set in mod_init. TODO remove.
 log = None
@@ -137,21 +138,36 @@ class kamailio:
         except KeyError:
             return
 
-        dstnr = PV.rU
         srcnr = PV.fU
-        if len(srcnr) == 4 and (srcnr[0] in "12" or srcnr[0] == "0"):
-            PV.fU = srcnr = f"+499119352{srcnr}"
+        dstnr = PV.rU
+        snr = nr_fix(srcnr)
+        dnr = nr_fix(dstnr)
 
-        if src == "smurf":
-            if len(dstnr) == 4 and (dstnr[0] in "12" or dstnr[0] == "0"):
-                dstnr = f"+499119352{dstnr}"
-            PV.ru = f"sip:{dstnr}@{ip.noris}:5060;transport=tcp"
+        if snr != srcnr:
+            PV.fU = snr
 
-        elif src == "noris":
-            PV.ru = f"sip:{dstnr}@{ip.smurf}:5060;transport=tcp"
+        dst = None
+        dstpl = 0
+        for ipref,opnr in VIA.items():
+            if len(ipref) < dstpl:
+                continue
+            if not dnr.startswith(ipref):
+                continue
+            opref,odst = opnr
+            dst = odst
+            dstpl = len(ipref)
+            dstnr = opref+dnr[len(ipref):]
 
-        else:
+        self.log.debug("ROUTE from %r to %r: %s",snr,dstnr, dst)
+        if dst is None:
             return
+
+        try:
+            transport,dst = getattr(ip,dst)
+        except AttributeError:
+            return
+        else:
+            PV.ru = f"sip:{dstnr}@{dst}:5060;transport={transport}"
 
         self.route_relay(msg)
 
