@@ -8,10 +8,10 @@ import sys
 sys.path.insert(0,"/root/kamailio-py")
 from kamailio import var, thread_state, exit
 from kamailio import log as log_
-from kamailio.trace import trace
+from kamailio.trace import trace,trace_enable
 
 from pprint import pformat
-import json
+# import json
 import logging
 
 import KSR
@@ -19,6 +19,7 @@ import KSR
 VAR=var.VAR
 DEF=var.DEF
 PV=var.PV
+XAVP=var.XAVP
 
 # global variables corresponding to defined values (e.g., flags) in kamailio.cfg
 FLT_ACC=1
@@ -30,8 +31,8 @@ FLB_NATB=6
 FLB_NATSIPPING=7
 BAD_AGENTS = {"friendly", "scanner", "sipcli", "sipvicious"}
 
-from config import ip,VIA,nr_fix
-SRC = {v[1]:k for k,v in vars(ip).items() if k[0] != "_"} 
+from config import PROVIDER,ROUTE,nr_fix
+SRC = {v.addr:k for k,v in PROVIDER.items() if k[0] != "_"} 
 
 # Global info logger, set in mod_init. TODO remove.
 log = None
@@ -43,6 +44,8 @@ def mod_init():
     global log
     logger = logging.getLogger("main")
     log = logger.info
+    trace_enable(True) # DEF.WITH_PYTRACE)
+
     return kamailio(logger=logger)
 
 
@@ -65,9 +68,6 @@ class kamailio:
         self.log.debug("")
         self.log.debug("===== request [%s] from [%s]", PV.rm, PV.ru)
         log_.dump_obj(msg,"msg")
-
-        sip=KSR.sipjson.sj_serialize("0B","$var(foo)")
-        self.log.debug(pformat(json.loads(VAR.foo)))
 
         # per request initial checks
         self.route_reqinit(msg)
@@ -146,28 +146,28 @@ class kamailio:
         if snr != srcnr:
             PV.fU = snr
 
-        dst = None
-        dstpl = 0
-        for ipref,opnr in VIA.items():
-            if len(ipref) < dstpl:
-                continue
-            if not dnr.startswith(ipref):
-                continue
-            opref,odst = opnr
-            dst = odst
-            dstpl = len(ipref)
-            dstnr = opref+dnr[len(ipref):]
-
-        self.log.debug("ROUTE from %r to %r: %s",snr,dstnr, dst)
+        dst = ROUTE(dnr,src)
+        if dst:
+            dstnr,dst = dst
+        else:
+            dstnr = None
+        self.log.debug("ROUTE from %r: %s to %r: %s",snr,src, dstnr, dst)
         if dst is None:
+            return
+        if src == dst:
             return
 
         try:
-            transport,dst = getattr(ip,dst)
+            prov = PROVIDER[dst]
         except AttributeError:
             return
         else:
-            PV.ru = f"sip:{dstnr}@{dst}:5060;transport={transport}"
+            if prov.transport == "tls":
+                port = 5061
+                XAVP["tls"]._push(server_name=prov.domain, server_id=prov.domain)
+            else:
+                port = 5060
+            PV.ru = f"sip:{dstnr}@{prov.addr}:{port};transport={prov.transport}"
 
         self.route_relay(msg)
 
@@ -445,6 +445,16 @@ class kamailio:
     def onsend_route(self, msg):
         self.log.debug("")
         self.log.debug("===== send_on")
+        return 1
+
+    def tls_event(self, msg):
+        self.log.debug("")
+        self.log.debug("===== TLS %r", msg)
+        return 1
+
+    def event_route(self, *msg):
+        self.log.debug("")
+        self.log.debug("===== Event %r", msg)
         return 1
 
 
