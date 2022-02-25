@@ -12,6 +12,7 @@ from . import thread_state
 
 __export__ = [
     "trace",
+    "trace_enable",
 ]
 
 tracelog = logging.getLogger("T")
@@ -186,12 +187,17 @@ def skip_log(frame, oframe=None):
         return False
     return True
 
+_do_trace = False
+
 def trace(proc):
     """
     A wrapper that traces a function
     """
     @functools.wraps(proc)
     def pac(*a,**k):
+        if not _do_trace:
+            return proc(*a,**k)
+
         tf = sys.gettrace()
         pf = sys.getprofile()
         level,limit = thread_state.log_level,thread_state.log_limit
@@ -211,3 +217,6 @@ def trace(proc):
             thread_state.log_level,thread_state.log_limit = level,limit
     return pac
 
+def trace_enable(flag):
+    global _do_trace
+    _do_trace = flag
