@@ -67,7 +67,10 @@ def dump_obj(obj,n="?"):
             if attr in {"f_builtins", "f_globals"}:
                 val = "{**}"
             else:
-                val = getattr(obj, attr)
+                try:
+                    val = getattr(obj, attr)
+                except RuntimeError:
+                    continue # msg.status when not a numeric message
         except SystemError:
             logger.debug(f"{n}.{attr} = ?");
         else:
