@@ -45,8 +45,9 @@ class PV(_get):
         logger.debug("GET %s = %r", k, res)
         return res
 
-    @staticmethod
-    def __setattr__(k, v):
+    def __setattr__(self, k, v):
+        if k[0]=="_":
+            return super().__setattr__(k, v)
         logger.debug("SET %s = %r", k, v)
         if isinstance(v,int):
             KSR.pv.seti(f"${k}",v)
@@ -88,15 +89,32 @@ class _sub(_get):
         return f"${self.what_}({name})"
 
     def __getattr__(self, k):
-        res = KSR.pv.get(self._key(k))
-        logger.debug("GET %s %r = %r", k, self._key(k), res)
+        return self._get(self._key(k), ok=k)
         return res
 
     def __setattr__(self, k, v):
-        if isinstance(v,int):
-            KSR.pv.seti(self._key(k),v)
+        if k[0]=="_":
+            return super().__setattr__(k, v)
+        self._set(self._key(k),v, ok=k)
+
+    def _get(self, k, ok=None):
+        res = KSR.pv.get(k)
+        if ok is not None:
+            logger.debug("GET %s %r = %r", ok, k, res)
         else:
-            KSR.pv.sets(self._key(k),v)
+            logger.debug("GET %r = %r", k, res)
+        return res
+
+    def _set(self, k,v, ok=None):
+        if ok is not None:
+            logger.debug("SET %s %r = %r", ok, k, v)
+        else:
+            logger.debug("SET %r = %r", k, v)
+
+        if isinstance(v,int):
+            KSR.pv.seti(k,v)
+        else:
+            KSR.pv.sets(k,v)
 
     def __delattr__(self, k):
         KSR.pv.unset(self._key(k))
@@ -146,7 +164,109 @@ class _sub_s(_get):
     def _key(self, i):
         return f"$({parent.what_}({self.name})[i])"
 
-# AVP, XAVP: not useful for Python.
+
+# AVP, XAVP: not useful for Python but used internally
+
+class AVP(_sub):
+    """
+    AVP variables.
+
+    Assigning does not push. Use explicit push/pop if reequired.
+    """
+    _what = "avp"
+
+    def __setattr__(self,k,v):
+        if k[0]=="_":
+            return super().__setattr__(k, v)
+        self._set(f"$({self._what}({k})[*]",v)
+
+    def __delattr__(self,k):
+        self._set(f"$({self._what}({k})[*]",None)
+
+    def _push(self,k,v):
+        super().__setattr__(k,v)
+
+    def _pop(self, k):
+        res = self.__getattr__(k)
+        super().__setattr__(k,None)
+
+
+class _xavp(_sub):
+    def __init__(self,p,k):
+        self._what = p._what
+        self._k = k
+
+    def _key(self, k):
+        return f"${self._what}({self._k}=>{k})"
+    def _topkey(self, k):
+        return f"${self._what}({self._k}[0]=>{k})"
+
+    def __setattr__(self, k, v):
+        if k[0]=="_":
+            return super().__setattr__(k, v)
+        raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
+
+    def __delattr__(self, k):
+        raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
+
+    def _push(self, **data):
+        """
+        Push a dict to this XAVP hash
+
+        required e.g. for TLS
+        """
+        kp = self._key
+        if not data:
+            raise ValueError("need at least one key")
+        for k,v in data.items():
+            self._set(kp(k),v, ok=k)
+            kp=self._topkey
+
+class XAVP(_sub):
+    """
+    Rudimentary XAVP support.
+
+    These things don't map at all well to Python (e.g. there's no way to enumerate keys)
+    and setting a value auto-pushes. Thus this is read-only for now.
+    """
+    _what = "xavp"
+
+    def __getattr__(self, k):
+        return _xavp(self,k)
+
+    def __setattr__(self, k, v):
+        if k[0]=="_":
+            return super().__setattr__(k, v)
+        raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
+
+    def _get(self, k):
+        """
+        Special method to return a single value
+        """
+        return super().__getattr__(k)
+
+    def _set(self, k, v):
+        """
+        Set. Accepts a dict
+        """
+        raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
+
+    def __delattr__(self, k):
+        KSR.pv.xavm_rm(k)
+XAVP=XAVP()
+
+class XAVI(type(XAVP)):
+    """Case-independent version of XAVP"""
+    _what = "xavi"
+XAVI=XAVI()
+
+
+class EXPIRES(_sub):
+    """
+    .min, .max: expiry values for the current SIP message
+    """
+    what_="expires"
+EXPIRES=EXPIRES()
 
 class MSG(_sub):
     what_="msg"
@@ -197,6 +317,30 @@ SNDFROM=SNDFROM()
 class SNDTO(_sub):
     what_="sndto"
 SNDTO=SNDTO()
+
+class XAVU1(_sub):
+    """
+    XAVU access. This accesses single-level values. Use XAVU for two-level.
+    """
+    what_="xavu"
+XAVU1=XAVU1()
+
+class XAVU:
+    """
+    XAVU hashes.
+    """
+    what_ = "xavu"
+
+    def __getattr__(self, i):
+        return _sub_s(self, i)
+
+    def __setattr__(self, i, val):
+        if i[0]=="_":
+            return super().__setattr__(i, val)
+        raise TypeError("Use XAVU1 to access single entries")
+
+    def __delattr__(self, i):
+        raise TypeError("Use XAVU1 to access single entries")
 
 _it=0
 _it_lock = Lock()
@@ -388,6 +532,8 @@ class NHDR:
         return _sub_s(self, i)
 
     def __setattr__(self, i, val):
+        if i[0]=="_":
+            return super().__setattr__(i, val)
         raise TypeError("You can only get/delete an NHDR instance")
 
     def __delattr__(self, i):
