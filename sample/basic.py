@@ -9,17 +9,26 @@ sys.path.insert(0,"/root/kamailio-py")
 from kamailio import var, thread_state, exit
 from kamailio import log as log_
 from kamailio.trace import trace,trace_enable
+from ursine.header import Header
 
 from pprint import pformat
-# import json
+import json
 import logging
+import re
 
 import KSR
+
+re_savp = re.compile('^m=audio \\d+ RTP/SAVP ', re.MULTILINE)
 
 VAR=var.VAR
 DEF=var.DEF
 PV=var.PV
 XAVP=var.XAVP
+XAVU1=var.XAVU1
+HDR=var.HDR
+HDRC=var.HDRC
+NHDR=var.NHDR
+SNDTO=var.SNDTO
 
 # global variables corresponding to defined values (e.g., flags) in kamailio.cfg
 FLT_ACC=1
@@ -32,7 +41,17 @@ FLB_NATSIPPING=7
 BAD_AGENTS = {"friendly", "scanner", "sipcli", "sipvicious"}
 
 from config import PROVIDER,ROUTE,nr_fix
-SRC = {v.addr:k for k,v in PROVIDER.items() if k[0] != "_"} 
+SRC = {}
+k = v = vv = None
+for k,v in PROVIDER.items():
+    if isinstance(v.addr,(list,tuple)):
+        for vv in v.addr:
+            SRC[vv] = k
+    else:
+        SRC[v.addr] = k
+del k
+del v
+del vv
 
 # Global info logger, set in mod_init. TODO remove.
 log = None
@@ -44,7 +63,7 @@ def mod_init():
     global log
     logger = logging.getLogger("main")
     log = logger.info
-    trace_enable(True) # DEF.WITH_PYTRACE)
+    trace_enable(DEF.WITH_PYTRACE)
 
     return kamailio(logger=logger)
 
@@ -67,7 +86,8 @@ class kamailio:
     def ksr_request_route(self, msg):
         self.log.debug("")
         self.log.debug("===== request [%s] from [%s]", PV.rm, PV.ru)
-        log_.dump_obj(msg,"msg")
+        sip=KSR.sipjson.sj_serialize("0B","$var(debug_json)")
+        self.log.debug("Data:\n%s",pformat(json.loads(VAR.debug_json)))
 
         # per request initial checks
         self.route_reqinit(msg)
@@ -93,6 +113,8 @@ class kamailio:
 
         if KSR.tm.t_check_trans()==0:
             return 1
+
+        self.fix_contact(msg)
 
         # authentication
         self.route_auth(msg)
@@ -130,7 +152,24 @@ class kamailio:
 
         return 1
 
-    # Who needs databases …
+    def fix_contact(self, msg):
+        if PV.rm != "INVITE":
+            return
+
+        src = msg.src_address[0]
+        try:
+            src = SRC[src]
+        except KeyError:
+            return
+
+        srcnr = PV.fU
+        snr = nr_fix(srcnr, src)
+
+        if HDRC.Contact > 0:
+            h=Header(HDR.Contact)
+            if h.uri.user != snr:
+                HDR.Contact = str(h.with_uri(h.uri.with_user(snr)))
+
     def route_static(self, msg):
         src = msg.src_address[0]
         try:
@@ -140,11 +179,17 @@ class kamailio:
 
         srcnr = PV.fU
         dstnr = PV.rU
-        snr = nr_fix(srcnr)
-        dnr = nr_fix(dstnr)
+        snr = nr_fix(srcnr, src)
+        dnr = nr_fix(dstnr, src)
 
         if snr != srcnr:
             PV.fU = snr
+        if dnr != dstnr:
+            PV.tU = dnr
+        if PV.fu == "":
+            PV.fu = snr
+        if PV.tu == "":
+            PV.tu = dnr
 
         dst = ROUTE(dnr,src)
         if dst:
@@ -159,16 +204,26 @@ class kamailio:
 
         try:
             prov = PROVIDER[dst]
+            sprov = PROVIDER[src]
         except AttributeError:
             return
         else:
+            XAVU1.call_src = PV.siz
+            XAVU1.src_encrypt = sprov.encrypt or 0
+            XAVU1.dst_encrypt = prov.encrypt or 0
+            XAVU1.src_encrypt_opt = sprov.encrypt_options or ""
+            XAVU1.dst_encrypt_opt = prov.encrypt_options or ""
             if prov.transport == "tls":
-                port = 5061
                 XAVP["tls"]._push(server_name=prov.domain, server_id=prov.domain)
-            else:
-                port = 5060
-            PV.ru = f"sip:{dstnr}@{prov.addr}:{port};transport={prov.transport}"
+#           if not prov.port:
+#               self.log.warning("Provider %s doesn't have a port", prov.domain)
+#               KSR.sl.sl_send_reply(480, "No link")
+#               sys.exit()
+#           elif prov.use_port:
+#               PV.fsn = f"s_{prov.transport}"
+            PV.ru = f"sip:{dstnr}@{prov.last_addr}:{prov.port};transport={prov.transport}"
 
+        PV.td = prov.domain
         self.route_relay(msg)
 
         
@@ -223,6 +278,17 @@ class kamailio:
         if KSR.is_OPTIONS():
 #               and KSR.is_myself_ruri()
 #               and KSR.corex.has_ruri_user() < 0):
+            src = msg.src_address[0]
+            try:
+                src = PROVIDER[SRC[src]]
+            except KeyError:
+                pass
+            else:
+                if src.use_port:
+                    src.port=PV.sp
+                    src.last_addr = PV.siz
+                    self.log.info(f"{src.domain}: Use port {src.port}")
+
             KSR.sl.sl_send_reply(200,"Keepalive")
             sys.exit()
 
@@ -305,9 +371,15 @@ class kamailio:
         sys.exit()
 
 
-
-    # IP authorization and user uthentication
+    # IP authorization and user authentication.
     def route_auth(self, msg):
+        # Known providers are skipped here.
+        try:
+            src = SRC[msg.src_address[0]]
+        except KeyError:
+            pass
+        else:
+            return
 
         if not KSR.is_REGISTER():
             if hasattr(KSR,"permissions") and KSR.permissions.allow_source_address(1)>0:
@@ -355,10 +427,25 @@ class kamailio:
 
         if DEF.WITH_NAT:
             if DEF.WITH_RTPENGINE:
-                if KSR.nathelper.nat_uac_test(8):
-                    KSR.rtpengine.rtpengine_manage("SIP-source-address replace-origin replace-session-connection")
+                if XAVU1.call_src == PV.siz:
+                    enc = XAVU1.dst_encrypt
                 else:
-                    KSR.rtpengine.rtpengine_manage("replace-origin replace-session-connection");
+                    enc = XAVU1.src_encrypt
+                src_opt = XAVU1.src_encrypt_opt or ""
+                dst_opt = XAVU1.dst_encrypt_opt or ""
+                if enc:
+                    opt = "RTP/SAVP"
+                else:
+                    opt = "RTP/AVP"
+                opt = f"{opt} {src_opt} {dst_opt}"
+
+                if KSR.nathelper.nat_uac_test(8):
+                    # SIP-source-address
+                    opt = f"trust-address replace-origin replace-session-connection {opt}"
+                else:
+                    opt = f"replace-origin replace-session-connection {opt}"
+                self.log.debug("RTP engine: %s", opt)
+                KSR.rtpengine.rtpengine_manage(opt)
             else:
                 if KSR.nathelper.nat_uac_test(8):
                     KSR.rtpproxy.rtpproxy_manage("co")
@@ -401,6 +488,20 @@ class kamailio:
     def branch_manage(self, msg):
         self.log.debug("")
         self.log.debug(f'===== new branch [{PV.T_branch_idx}] to {PV.ru}')
+
+#       src = msg.src_address[0]
+#       try:
+#           src = SRC[src]
+#       except KeyError:
+#           pass
+#       else:
+#           srcnr = PV.fU
+#           snr = nr_fix(srcnr, src)
+#           if HDRC.Contact > 0:
+#               h=Header(HDR.Contact)
+#               if h.uri.user != snr:
+#                   HDR.Contact = str(h.with_uri(h.uri.with_user(snr)))
+
         self.route_natmanage(msg)
         return 1
 
@@ -444,7 +545,7 @@ class kamailio:
     @trace
     def onsend_route(self, msg):
         self.log.debug("")
-        self.log.debug("===== send_on")
+        self.log.debug("===== send_on to %s:%d\n%s", SNDTO.ip,SNDTO.port, SNDTO.buf)
         return 1
 
     def tls_event(self, msg):
