@@ -21,14 +21,22 @@ class DNSError(RuntimeError):
 
 class _get:
     """
-    A mix-in to provide `__*item__` methods that call `__*attr__`.
+    A mix-in to provide `__*attr__` methods that call `__*item__`.
     """
-    def __getitem__(self,k):
-        return self.__getattr__(k)
-    def __setitem__(self,k,v):
-        return self.__setattr__(k,v)
-    def __delitem__(self,k):
-        return self.__delattr__(k)
+    def __getattr__(self,k):
+        if k[0] == "_" or k[-1] == "_":
+            return super().__getattribute__(k)
+        return self.__getitem__(k)
+
+    def __setattr__(self,k,v):
+        if k[0] == "_" or k[-1] == "_":
+            return super().__setattr__(k,v)
+        return self.__setitem__(k,v)
+
+    def __delattr__(self,k):
+        if k[0] == "_" or k[-1] == "_":
+            return super().__delattr__(k)
+        return self.__delitem__(k)
 
 class PV(_get):
     """
@@ -40,22 +48,20 @@ class PV(_get):
     This is a singleton.
     """
     @staticmethod
-    def __getattr__(k):
+    def __getitem__(k):
         res = KSR.pv.get(f"${k}")
-        logger.debug("GET %s = %r", k, res)
+#       logger.debug("GET %s = %r", k, res)
         return res
 
-    def __setattr__(self, k, v):
-        if k[0]=="_":
-            return super().__setattr__(k, v)
-        logger.debug("SET %s = %r", k, v)
+    def __setitem__(self, k, v):
+#       logger.debug("SET %s = %r", k, v)
         if isinstance(v,int):
             KSR.pv.seti(f"${k}",v)
         else:
             KSR.pv.sets(f"${k}",v)
 
     @staticmethod
-    def __delattr__(k):
+    def __delitem__(k):
         KSR.pv.unset(f"${k}")
 PV=PV()
 
@@ -88,36 +94,59 @@ class _sub(_get):
     def _key(self, name):
         return f"${self.what_}({name})"
 
-    def __getattr__(self, k):
+    def __getitem__(self, k):
         return self._get(self._key(k), ok=k)
-        return res
 
-    def __setattr__(self, k, v):
-        if k[0]=="_":
-            return super().__setattr__(k, v)
+    def __setitem__(self, k, v):
         self._set(self._key(k),v, ok=k)
 
     def _get(self, k, ok=None):
         res = KSR.pv.get(k)
-        if ok is not None:
-            logger.debug("GET %s %r = %r", ok, k, res)
-        else:
-            logger.debug("GET %r = %r", k, res)
+#       if ok is not None:
+#           logger.debug("GET %s %r = %r", ok, k, res)
+#       else:
+#           logger.debug("GET %r = %r", k, res)
         return res
 
     def _set(self, k,v, ok=None):
-        if ok is not None:
-            logger.debug("SET %s %r = %r", ok, k, v)
-        else:
-            logger.debug("SET %r = %r", k, v)
+#       if ok is not None:
+#           logger.debug("SET %s %r = %r", ok, k, v)
+#       else:
+#           logger.debug("SET %r = %r", k, v)
 
         if isinstance(v,int):
             KSR.pv.seti(k,v)
         else:
             KSR.pv.sets(k,v)
 
-    def __delattr__(self, k):
+    def __delitem__(self, k):
         KSR.pv.unset(self._key(k))
+
+class _sub_h(_sub):
+    """
+    Accessor for headers, which are annoyingly special.
+    """
+    def __init__(self, name):
+        self.name_ = name
+
+    def __getitem__(self,k):
+        res = KSR.pv.get(f"$(hdr({self.name_})[{k}])")
+        logger.debug("GETH %s:%s %r %r",self.name_,k,f"$(hdr({self.name_})[{k}])", res)
+        return res
+
+    def __setitem__(self,k,v):
+        logger.debug("SETH %s:%s %r %r",self.name_,k, f"{self.name_}[{k+1}]",v)
+        KSR.textopsx.remove_hf_value(f"{self.name_}[{k+1}]")
+        if v:
+            # one-based
+            KSR.textopsx.append_hf_value(f"{self.name_}[{k+1}]", f"{self.name_}: {v}")
+        else:
+            KSR.textopsx.insert_hf_value(f"{self.name_}", f"{self.name_}: {v}")
+
+    def __delitem__(self,k):
+        KSR.textopsx.remove_hf_value(f"{self.name_}[{k+1}]")
+
+
 
 class _sub_i(_get):
     """
@@ -126,11 +155,11 @@ class _sub_i(_get):
     DNS
     """
     def __init__(self, parent, i):
-        self.parent = parent
-        self.i = i
+        self.parent_ = parent
+        self.i_ = i
 
     def _key(self, name):
-        return f"${parent.what_}=>{name}({self.i})"
+        return f"${self.parent_.what_}=>{name}({self.i_})"
 
 class _subi:
     """
@@ -151,18 +180,18 @@ class _subi:
             return super().__delitem__(i)
         raise TypeError("You can only set an attribute of this")
 
-class _sub_s(_get):
+class _sub_s(_sub):
     """
     Helper for indexed one-level pseudovariables.
 
     HDR
     """
     def __init__(self, parent, name):
-        self.parent = parent
-        self.name = name
+        self.parent_ = parent
+        self.name_ = name
 
     def _key(self, i):
-        return f"$({parent.what_}({self.name})[i])"
+        return f"$({self.parent_.what_}({self.name_})[{i}])"
 
 
 # AVP, XAVP: not useful for Python but used internally
@@ -175,20 +204,18 @@ class AVP(_sub):
     """
     _what = "avp"
 
-    def __setattr__(self,k,v):
-        if k[0]=="_":
-            return super().__setattr__(k, v)
+    def __setitem__(self,k,v):
         self._set(f"$({self._what}({k})[*]",v)
 
-    def __delattr__(self,k):
+    def __delitem__(self,k):
         self._set(f"$({self._what}({k})[*]",None)
 
     def _push(self,k,v):
-        super().__setattr__(k,v)
+        super().__setitem__(k,v)
 
     def _pop(self, k):
-        res = self.__getattr__(k)
-        super().__setattr__(k,None)
+        res = self.__getitem__(k)
+        super().__setitem__(k,None)
 
 
 class _xavp(_sub):
@@ -201,12 +228,10 @@ class _xavp(_sub):
     def _topkey(self, k):
         return f"${self._what}({self._k}[0]=>{k})"
 
-    def __setattr__(self, k, v):
-        if k[0]=="_":
-            return super().__setattr__(k, v)
+    def __setitem__(self, k, v):
         raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
 
-    def __delattr__(self, k):
+    def __delitem__(self, k):
         raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
 
     def _push(self, **data):
@@ -231,19 +256,17 @@ class XAVP(_sub):
     """
     _what = "xavp"
 
-    def __getattr__(self, k):
+    def __getitem__(self, k):
         return _xavp(self,k)
 
-    def __setattr__(self, k, v):
-        if k[0]=="_":
-            return super().__setattr__(k, v)
+    def __setitem__(self, k, v):
         raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
 
     def _get(self, k):
         """
         Special method to return a single value
         """
-        return super().__getattr__(k)
+        return super().__getitem__(k)
 
     def _set(self, k, v):
         """
@@ -251,7 +274,7 @@ class XAVP(_sub):
         """
         raise NotImplementedError("Modifying XAVPs is not yet(?) implemented")
 
-    def __delattr__(self, k):
+    def __delitem__(self, k):
         KSR.pv.xavm_rm(k)
 XAVP=XAVP()
 
@@ -286,8 +309,8 @@ DSV=DSV()
 
 class DEF(_sub):
     what_="def"
-    def __getattr__(self, k):
-        res = super().__getattr__(k)
+    def __getitem__(self, k):
+        res = super().__getitem__(k)
         if res == "":
             res = True # "ifdef"-style tests
         return res
@@ -318,6 +341,14 @@ class SNDTO(_sub):
     what_="sndto"
 SNDTO=SNDTO()
 
+class HN(_sub):
+    what_="hn"
+HN=HN()
+
+class TCP(_sub):
+    what_="tcp"
+TCP=TCP()
+
 class XAVU1(_sub):
     """
     XAVU access. This accesses single-level values. Use XAVU for two-level.
@@ -331,15 +362,13 @@ class XAVU:
     """
     what_ = "xavu"
 
-    def __getattr__(self, i):
+    def __getitem__(self, i):
         return _sub_s(self, i)
 
-    def __setattr__(self, i, val):
-        if i[0]=="_":
-            return super().__setattr__(i, val)
+    def __setitem__(self, i, val):
         raise TypeError("Use XAVU1 to access single entries")
 
-    def __delattr__(self, i):
+    def __delitem__(self, i):
         raise TypeError("Use XAVU1 to access single entries")
 
 _it=0
@@ -493,7 +522,7 @@ class _sub_val(_get):
     def _key(self, name):
         return f"${parent.what_}=>{name}({self.i})"
 
-class HDR(_get):
+class HDR(_sub):
     """
     Access the (first) SIP header.
 
@@ -501,6 +530,8 @@ class HDR(_get):
 
     Deleting removes the first header.
     """
+    what_ = "hdr"
+
     @staticmethod
     def __iter__(self):
         it = sym()
@@ -511,15 +542,20 @@ class HDR(_get):
         finally:
             KSR.textopsx.hf_iterator_end(it)
 
-    def __delattr__(self,name):
-        KSR.textopsx.remove_hf_value(name)
+    def __delitem__(self,name):
+        KSR.hdr.remove(name)
+
+    def __setitem__(self,name,val):
+        KSR.textopsx.msg_apply_changes()
+        KSR.hdr.rmappend(name,f"{name}: {val}\r\n")
+        KSR.textopsx.msg_apply_changes()
 HDR=HDR()
 
-class _HDRC(_get):
+class HDRC(_sub):
     what_ = "hdrc"
-_HDRC=_HDRC()
+HDRC=HDRC()
 
-class NHDR:
+class NHDR(_get):
     """
     Access all headers, not just the first.
 
@@ -528,16 +564,15 @@ class NHDR:
     """
     what_ = "hdr"
 
-    def __getattr__(self, i):
-        return _sub_s(self, i)
+    def __getitem__(self, i):
+        return _sub_h(i)
 
-    def __setattr__(self, i, val):
-        if i[0]=="_":
-            return super().__setattr__(i, val)
+    def __setitem__(self, i, val):
         raise TypeError("You can only get/delete an NHDR instance")
 
-    def __delattr__(self, i):
+    def __delitem__(self, i):
         KSR.textops.remove_hf(i)
+NHDR=NHDR()
 
 class BDY():
     @staticmethod
@@ -571,7 +606,7 @@ class SHT(_lookup):
             yield v
 
 class SHT:
-    def __getattr__(self, k):
+    def __getitem__(self, k):
         return _sht(k)
     # TODO add age_
 
