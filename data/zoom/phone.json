@@ -7684,6 +7684,10 @@
                           },
                           "phone_numbers": {
                             "description": "The external contact's phone numbers.",
+                            "items": {
+                              "description": "The external contact's extension number.",
+                              "type": "string"
+                            },
                             "type": "array"
                           }
                         },
@@ -7772,7 +7776,11 @@
                   },
                   "phone_numbers": {
                     "description": "A comma-separated list of the external contact's phone numbers. This value **must** be in [E.164](https://en.wikipedia.org/wiki/E.164) format. If you do not provide an extension number, you **must** provide this value.",
-                    "type": "array"
+                    "type": "array",
+                    "items": {
+                      "description": "The external contact's extension number.",
+                      "type": "string"
+                    }
                   },
                   "routing_path": {
                     "description": "The external contact's SIP group, to define the call routing path. This is for customers that use SIP trunking.",
@@ -7888,6 +7896,10 @@
                     },
                     "phone_numbers": {
                       "description": "The external contact's phone numbers.",
+                      "items": {
+                        "description": "The external contact's extension number.",
+                        "type": "string"
+                      },
                       "type": "array"
                     }
                   },
@@ -7977,6 +7989,10 @@
                   },
                   "phone_numbers": {
                     "description": "A comma-separated list of the external contact's phone numbers. This value **must** be in [E.164](https://en.wikipedia.org/wiki/E.164) format. If you do not provide an extension number, you **must** provide this value.",
+                    "items": {
+                      "description": "The external contact's extension number.",
+                      "type": "string"
+                    },
                     "type": "array"
                   },
                   "routing_path": {
@@ -11684,6 +11700,10 @@
                         "properties": {
                           "numbers": {
                             "description": "The ported numbers.",
+                            "items": {
+                              "description": "The external contact's extension number.",
+                              "type": "string"
+                            },
                             "type": "array"
                           },
                           "order_id": {
@@ -11827,6 +11847,10 @@
                     },
                     "numbers": {
                       "description": "Ported numbers.",
+                      "items": {
+                        "description": "The external contact's extension number.",
+                        "type": "string"
+                      },
                       "type": "array"
                     },
                     "order_id": {
@@ -14485,7 +14509,7 @@
         "summary": "Update a setting template"
       }
     },
-    "/phone/settings": {
+    "/phone/settings/{accountId}": {
       "get": {
         "responses": {
           "200": {
@@ -17591,7 +17615,7 @@
                         "voicemail_access_members": {
                           "description": "Shared voicemail access member list.",
                           "items": {
-                            "$ref": "#/paths/~1phone~1users~1%7BuserId%7D/patch/requestBody/content/application~1json/schema/properties/policy/properties/voicemail_access_members/items"
+                            "$ref": "#/paths/~1phone~1users~1{userId}/patch/requestBody/content/application~1json/schema/properties/policy/properties/voicemail_access_members/items"
                           },
                           "type": "array",
                           "uniqueItems": true
