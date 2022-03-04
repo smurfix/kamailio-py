@@ -9,6 +9,9 @@ PROVIDER = {
     "special": Provider("secret.example","tls","10.3.4.5"),
 }
 
+API_KEY = "YOUR_API_KEY_HERE"
+API_SECRET = "YOUR_API_SECRET_HERE"
+
 here = re.compile("(\\+4969|004969|069|)90009")
 
 def ROUTE(nr):
