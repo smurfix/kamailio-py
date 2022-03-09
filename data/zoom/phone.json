@@ -281,6 +281,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
