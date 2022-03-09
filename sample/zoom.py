@@ -2,6 +2,8 @@ from openapi3 import OpenAPI
 import json
 import jwt
 import config
+import time
+from pprint import pprint
 
 with open("data/zoom/phone.json","r") as _f:
     _s = json.load(_f)
@@ -10,8 +12,6 @@ api = OpenAPI(_s)
 
 del _f
 del _s
-
-regions = api.call_getRegions()
 
 # authenticate using a securityScheme defined in the spec's components.securitySchemes
 def generate_jwt(key, secret):
@@ -23,8 +23,10 @@ def generate_jwt(key, secret):
     return token.decode("utf-8")
 
 token = generate_jwt(config.API_KEY, config.API_SECRET)
-api.authenticate('Bearer', token)
-
 breakpoint()
+api.authenticate('Bearer', "Bearer "+token)
+pprint(api.call_listAutoReceptionists())
+
+
 pass
 
