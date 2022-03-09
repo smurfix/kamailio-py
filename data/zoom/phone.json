@@ -922,6 +922,182 @@
         "summary": "Unassign a phone number"
       }
     },
+    "/phone/batch_locations": {
+      "post": {
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "response": {
+                    "value": [
+                      {
+                        "display_name": "location name",
+                        "location_id": "8e77d889-baba-43d1-b80c-77c90c135cde"
+                      }
+                    ]
+                  }
+                },
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "display_name": {
+                        "description": "The location's display name.",
+                        "type": "string"
+                      },
+                      "location_id": {
+                        "description": "The location ID.",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "**HTTP Status Code:** `201` \n\nCreated."
+          },
+          "400": {
+            "description": "**HTTP Status Code:** `400`\n\n\n**Error Code:** `300`\n\nValidation Failed.\nLocation does not exist: {0}.\nToo many concurrent requests. A request to add locations batch has already been made.\nLocations size must be less than 10.\nYou can only access up to 5000 locations.\nCan not bind ELIN if location does not have an emergency address.\nA phone number can not be bound to multiple locations at the same time.\nPhone number format invalid.\nPhone number does not exist.\nThere is an error with the parent location of the sub location.\nNetwork switches size must be less than 100.\nSwitch MAC address is required.\nDuplicate Switch Info found.\nMac Address format invalid.\nNumber bssid per location limited to less than 100.\nBSSID format error.\nEmergency address Line 1 is required.\nEmergency address country is required.\nIP format error.\nPublic IP is required.\nSIP group does not exist.\nIdentifier can not be matched.\nYou can only access up to {0} level.\nThis location identifier already exists. You cannot have duplicate identifiers.\nThe parent_identifier can not be the value of the identifier of the same location.\nThis location display_name already exists. You cannot have duplicate location names.\nIdentifier is required.\nLocation name is required.\nEmergency address VAT is required in {0}.\nEmergency address state code is required in {0}.\nEmergency address zip is required in {0}.\nThe field can not exceed {0} characters.\n"
+          }
+        },
+        "tags": [
+          "Emergency Service Locations"
+        ],
+        "description": "Use this API to batch add emergency service locations.\n\n**Prerequisites:**\n* Pro or higher account plan with Zoom phone license\n* Account owner or admin permissions\n\n**Scope:** `phone:write:admin`\n\n**[Rate Limit Label](https://marketplace.zoom.us/docs/api-reference/rate-limits#rate-limits):** `Light`",
+        "operationId": "batchAddLocations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "locations": {
+                    "items": {
+                      "properties": {
+                        "bssid": {
+                          "description": "The location's BSSID (Basic Service Set Identifier).",
+                          "type": "string"
+                        },
+                        "company_address": {
+                          "properties": {
+                            "address_line1": {
+                              "description": "The location's physical address.",
+                              "type": "string"
+                            },
+                            "address_line2": {
+                              "description": "The location's optional physical address information. For example, a suite number.",
+                              "type": "string"
+                            },
+                            "city": {
+                              "description": "The location's city.",
+                              "type": "string"
+                            },
+                            "country": {
+                              "description": "The location's country.",
+                              "type": "string"
+                            },
+                            "state_code": {
+                              "description": "The location's state/province/territory.",
+                              "type": "string"
+                            },
+                            "vat_number": {
+                              "description": "The location's VAT/NIF/CIF number. This number is used to get a new phone number online.\n\n**Note:** For Belgium, Netherlands, Portugal, Spain, and Switzerland, this field is required.",
+                              "type": "string"
+                            },
+                            "zip": {
+                              "description": "The location's zip or postal code.",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "address_line1",
+                            "country"
+                          ],
+                          "type": "object"
+                        },
+                        "display_name": {
+                          "description": "The location's display name.",
+                          "type": "string"
+                        },
+                        "elin": {
+                          "description": "The location's ELIN (Emergency Location Identification Number). This value can be a BYOC number. If you use a BYOC number, you will need to manually update the BYOC address with your carrier.",
+                          "type": "string"
+                        },
+                        "identifier": {
+                          "description": "The location's ID.",
+                          "type": "string"
+                        },
+                        "network_switches": {
+                          "items": {
+                            "properties": {
+                              "mac_address": {
+                                "description": "The location's assigned MAC address.",
+                                "type": "string"
+                              },
+                              "port": {
+                                "description": "The location's port label. You **cannot** pass this parameter with the `port_prefix` and `port_range` parameter.",
+                                "type": "string"
+                              },
+                              "port_prefix": {
+                                "description": "The location's port prefix. The prefix value **cannot** end with a digit.\n\nThis parameter passes with the `port_range_from` and `port_range_to` parameters.",
+                                "type": "string"
+                              },
+                              "port_range_from": {
+                                "description": "The location's port starting range number. This can be a non-negative integer value.\n\nThis value **must** be less than or equal to the `port_range_to` value.",
+                                "type": "string"
+                              },
+                              "port_range_to": {
+                                "description": "The location's port ending range number. This can be a non-negative integer value.\n\nThis value **cannot** be less than the `port_range_from` value.",
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "parent_identifier": {
+                          "description": "The location's parent location ID. Leave this value empty if the current location is a top location.",
+                          "type": "string"
+                        },
+                        "private_ip": {
+                          "description": "The location's subnet or private IP address.",
+                          "type": "string"
+                        },
+                        "public_ip": {
+                          "description": "The location's public IP address. This field is required for top locations.",
+                          "type": "string"
+                        },
+                        "sip_group_name": {
+                          "description": "The location's assigned SIP routing group for outgoing calls. The system routes the call to the defined [SIP trunk](https://en.wikipedia.org/wiki/SIP_trunking) in the SIP groups when location-based routing is enabled.\n\nThis only affects top locations and ignores all other locations.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "identifier",
+                        "display_name",
+                        "emergency_address"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "site_id": {
+                    "description": "The site's ID.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "locations"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "summary": "Batch add emergency service locations"
+      }
+    },
     "/phone/blocked_list": {
       "get": {
         "parameters": [
@@ -13195,6 +13371,94 @@
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "response": {
+                    "value": [
+                      {
+                        "name": "test",
+                        "number_pattern": "test",
+                        "order": 1,
+                        "routing_path": {
+                          "sip_group": {
+                            "id": "V1nhzPsjTxuBr2ttX_snxQ",
+                            "name": "test_custom_id"
+                          },
+                          "type": "sip_group"
+                        },
+                        "routing_rule_id": "Ct6mcZfdsWYug46puWOQg",
+                        "site_id": "SQv52YtkRLC2dwrDdYtGsA",
+                        "translation": "test"
+                      }
+                    ]
+                  }
+                },
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "name": {
+                        "description": "Routing rule name.",
+                        "type": "string"
+                      },
+                      "number_pattern": {
+                        "description": "Perl-compatible number_pattern expression.",
+                        "type": "string"
+                      },
+                      "order": {
+                        "description": "Rule order to be applied, '1' being the highest.",
+                        "type": "integer"
+                      },
+                      "routing_path": {
+                        "properties": {
+                          "sip_group": {
+                            "description": "It cannot be null when 'type' = 'sip_group'.",
+                            "properties": {
+                              "id": {
+                                "description": "Unique identifier of the SIP group.",
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "SIP group name.",
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": {
+                            "description": "Routing rule type.",
+                            "enum": [
+                              "other_sites",
+                              "pstn",
+                              "sip_group"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "routing_rule_id": {
+                        "description": "Unique identifier of the routing rule.",
+                        "type": "string"
+                      },
+                      "site_id": {
+                        "description": "Unique identifier of the site: nullable if the routing rule is at an account level.",
+                        "type": "string"
+                      },
+                      "translation": {
+                        "description": "Optional replacement pattern: must be in E.164 format.",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "**HTTP Status Code:** `200` \n\nList directory backup routing rules."
+          }
         },
         "tags": [
           "Directory Backup Routing Rules"
