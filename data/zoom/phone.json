@@ -390,6 +390,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -793,6 +795,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -833,6 +837,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -912,6 +918,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -1219,6 +1227,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -1263,6 +1273,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -1352,6 +1364,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -1443,6 +1457,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -1483,6 +1499,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -2113,6 +2131,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -2545,6 +2565,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -2701,6 +2723,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -2760,6 +2784,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -2872,6 +2898,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3058,6 +3086,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3095,6 +3125,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3186,6 +3218,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3239,6 +3273,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3282,6 +3318,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3374,6 +3412,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3416,6 +3456,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3453,6 +3495,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3535,6 +3579,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -3767,6 +3813,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4192,6 +4240,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4241,6 +4291,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4345,6 +4397,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4666,6 +4720,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4692,6 +4748,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4837,6 +4895,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4909,6 +4969,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -4969,6 +5031,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5042,6 +5106,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5073,6 +5139,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5239,6 +5307,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5268,6 +5338,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5335,6 +5407,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5399,6 +5473,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5619,6 +5695,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5662,6 +5740,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -5913,6 +5993,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -6146,6 +6228,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -6296,6 +6380,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -6441,6 +6527,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -6541,6 +6629,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -6601,6 +6691,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -7270,6 +7362,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -7378,6 +7472,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -7729,6 +7825,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -7892,6 +7990,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -7918,6 +8018,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8005,6 +8107,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8094,6 +8198,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8131,6 +8237,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8370,6 +8478,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8504,6 +8614,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8712,6 +8824,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -8738,6 +8852,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11024,6 +11140,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11305,6 +11423,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11345,6 +11465,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11436,6 +11558,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11581,6 +11705,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11644,6 +11770,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11753,6 +11881,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -11942,6 +12072,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -12134,6 +12266,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -12168,6 +12302,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -12532,6 +12668,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -13876,6 +14014,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -14410,6 +14550,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -14453,6 +14595,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -14862,6 +15006,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -14905,6 +15051,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -15123,6 +15271,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -15833,6 +15983,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -15929,6 +16081,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -16155,6 +16309,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -16284,6 +16440,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -16399,6 +16557,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -16436,6 +16596,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -17244,6 +17406,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -17950,6 +18114,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -17979,6 +18145,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -18850,6 +19018,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -19221,6 +19391,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -19471,6 +19643,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -19536,6 +19710,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -19603,6 +19779,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -19682,6 +19860,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -19890,6 +20070,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -20239,6 +20421,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -20265,6 +20449,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -20363,6 +20549,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -20412,6 +20600,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -20629,6 +20819,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -21028,6 +21220,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -21204,6 +21398,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -21399,6 +21595,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -21600,6 +21798,8 @@
         "security": [
           {
             "OAuth": []
+          }, {
+            "Bearer": []
           }
         ],
         "tags": [
@@ -21796,6 +21996,8 @@
   "security": [
     {
       "OAuth": []
+          }, {
+            "Bearer": []
     }
   ],
   "tags": [
