@@ -80,6 +80,12 @@ class kamailio:
         thread_state.setup(rank)
         return 0
 
+    def background(self, txt):
+        i=0
+        while True:
+            print("BG",i,txt)
+            time.sleep(10)
+            i += 1
 
     # SIP request routing. Cannot be renamed
     @trace
