@@ -3,9 +3,10 @@
 import logging
 import sys
 
-import KSR
-
-from . import var
+try:
+    import KSR
+except ImportError:
+    KSR = None
 
 #   CRITICAL = 50
 #   DEBUG = 10
@@ -54,7 +55,11 @@ def init(stderr=False):
     sys.stdin = open("/dev/tty","r")
     sys.stdout = open("/dev/tty","w")
 
-    logging.basicConfig(handlers=[KSRHandler()], level=logging.DEBUG)
+    cfg = {}
+    if KSR is not None:
+        cfg['handlers'] = [KSRHandler()]
+
+    logging.basicConfig(level=logging.DEBUG, **cfg)
     if stderr:
         logging.root.addHandler(logging.StreamHandler(sys.stderr))
 

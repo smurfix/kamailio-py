@@ -2,7 +2,10 @@
 
 import threading
 
-from .var import SHV as _SHV
+try:
+    from .var import SHV as _SHV
+except ImportError:
+    _SHV = {}
 
 class _State(threading.local):
     id = 0
@@ -62,5 +65,8 @@ class Provider:
 
 from sys import exit
 from . import log
-from . import var
+try:
+    from . import var
+except ImportError:
+    pass
 
