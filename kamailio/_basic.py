@@ -3,6 +3,8 @@
 ## KSR - the new dynamic object exporting Kamailio functions
 ## Router - the old object exporting Kamailio functions
 ##
+##
+## This is a sample implementation which 
 
 import sys
 sys.path.insert(0,"/root/kamailio-py")
@@ -40,7 +42,9 @@ FLB_NATB=6
 FLB_NATSIPPING=7
 BAD_AGENTS = {"friendly", "scanner", "sipcli", "sipvicious"}
 
-from config import PROVIDER,ROUTE,nr_fix
+import config
+from config import PROVIDER,nr_fix
+
 SRC = {}
 k = v = vv = None
 for k,v in PROVIDER.items():
@@ -191,7 +195,7 @@ class kamailio:
         if PV.tu == "":
             PV.tu = dnr
 
-        dst = ROUTE(dnr,src)
+        dst = config.ROUTE(dnr,src)
         if dst:
             dstnr,dst = dst
         else:
