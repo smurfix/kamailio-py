@@ -32,7 +32,7 @@ def updateNumber(nr):
 
     numByNr[nr.number]=nr
     numById[nr.id]=nr
-    var.SHV[shvPrefix+onr.number] = nr.assignee is not None
+    var.SHV[shvPrefix+nr.number] = nr.assignee is not None
     numUnseen.discard(nr.id)
 
 async def updateNumbers(api):
