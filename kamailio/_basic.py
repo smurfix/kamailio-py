@@ -222,6 +222,7 @@ class kamailio:
 #           elif prov.use_port:
 #               PV.fsn = f"s_{prov.transport}"
             PV.ru = f"sip:{dstnr}@{prov.last_addr}:{prov.port};transport={prov.transport}"
+            self.log.info(f"DEST {prov.domain}: {PV.ru}")
 
         PV.td = prov.domain
         self.route_relay(msg)
@@ -282,12 +283,14 @@ class kamailio:
             try:
                 src = PROVIDER[SRC[src]]
             except KeyError:
-                pass
+                self.log.warning(f"{src}: not found")
             else:
                 if src.use_port:
-                    src.port=PV.sp
+                    src.port = PV.sp
                     src.last_addr = PV.siz
-                    self.log.info(f"{src.domain}: Use port {src.port}")
+                    self.log.info(f"{src.domain}: Use port {src.last_addr}:{src.port}")
+                else:
+                    self.log.info(f"{src.domain}: Use port is off")
 
             KSR.sl.sl_send_reply(200,"Keepalive")
             sys.exit()
