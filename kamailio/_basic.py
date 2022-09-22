@@ -74,7 +74,7 @@ class kamailio:
         thread_state.setup(rank)
         return 0
 
-    def background(self, txt):
+    def background(self, txt, ttt):
         i=0
         while True:
             print("BG",i,txt)
