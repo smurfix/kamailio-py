@@ -60,17 +60,6 @@ del vv
 # Global info logger, set in mod_init. TODO remove.
 log = None
 
-# global function to instantiate a kamailio class object
-# -- executed when kamailio app_python module is initialized
-def mod_init():
-    log_.init(stderr=True)
-    global log
-    logger = logging.getLogger("main")
-    log = logger.info
-    trace_enable(DEF.WITH_PYTRACE)
-
-    return kamailio(logger=logger)
-
 
 # -- {start defining kamailio class}
 class kamailio:
@@ -568,5 +557,14 @@ class kamailio:
         self.log.debug("===== Event %r", msg)
         return 1
 
+# global function to instantiate a kamailio class object
+# -- executed when kamailio app_python module is initialized
+def mod_init(base=kamailio):
+    log_.init(stderr=True)
+    global log
+    logger = logging.getLogger("main")
+    log = logger.info
+    trace_enable(DEF.WITH_PYTRACE)
 
-# -- {end defining kamailio class}
+    return base(logger=logger)
+
