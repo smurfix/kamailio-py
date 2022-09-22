@@ -77,7 +77,7 @@ async def refresh_auth(api, task_status=trio.TASK_STATUS_IGNORED):
         await trio.sleep(1700)
 
 async def main(setup_done=lambda: None):
-    with open("data/zoom/phone.json","r") as _f:
+    with open("/root/kamailio-py/data/zoom/phone.json","r") as _f:
         _s = json.load(_f)
 
     async with OpenAPI(_s) as api, trio.open_nursery() as n:
