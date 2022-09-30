@@ -28,7 +28,7 @@ file = "LICENSE.txt"
 
 [project.urls]
 homepage = "https://intra.office.noris.de/Wiki/Zoom/Phone"
-repository = "git@gitlab.noris.net:voice/kamailio_py.git"
+repository = "https://gitlab.noris.net/voice/kamailio_py"
 
 [tool.flake8]
 max-line-length = 99
