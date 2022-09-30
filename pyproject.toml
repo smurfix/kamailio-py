@@ -42,9 +42,8 @@ profile = "black"
 [tool.setuptools]
 packages = [ "kamailio",]
 
-[tool.setuptools.package_data]
-kamailio = 
-	'*.json'
+[tool.setuptools.package-data]
+kamailio = [ '*.json', ]
 
 [tool.pylint.messages_control]
 disable="wrong-import-order,ungrouped-imports,too-many-nested-blocks,unspecified-encoding,missing-module-docstring,no-else-continue,too-many-instance-attributes,too-many-statements,too-many-return-statements,superfluous-parens,too-few-public-methods,use-dict-literal,too-many-locals,no-else-return,too-many-arguments,too-many-branches,invalid-name,fixme"
