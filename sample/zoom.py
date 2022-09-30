@@ -10,7 +10,10 @@ import time
 import trio
 from pprint import pprint
 
-from kamailio import var
+try:
+    from kamailio import var
+except ImportError:
+    var=None
 
 numByNr={}
 numById={}
@@ -32,7 +35,8 @@ def updateNumber(nr):
 
     numByNr[nr.number]=nr
     numById[nr.id]=nr
-    var.SHV[shvPrefix+onr.number] = nr.assignee is not None
+    if var is not None:
+        var.SHV[shvPrefix+onr.number] = nr.assignee is not None
     numUnseen.discard(nr.id)
 
 async def updateNumbers(api):
