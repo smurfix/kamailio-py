@@ -52,8 +52,11 @@ class KSRHandler(logging.Handler):
 
 def init(stderr=False):
     global _stdin,_stdout
-    sys.stdin = open("/dev/tty","r")
-    sys.stdout = open("/dev/tty","w")
+    try:
+        sys.stdin = open("/dev/tty","r")
+        sys.stdout = open("/dev/tty","w")
+    except OSError:
+        pass
 
     cfg = {}
     if KSR is not None:

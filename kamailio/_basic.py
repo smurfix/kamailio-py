@@ -3,6 +3,8 @@
 ## KSR - the new dynamic object exporting Kamailio functions
 ## Router - the old object exporting Kamailio functions
 ##
+##
+## This is a sample implementation which 
 
 import sys
 sys.path.insert(0,"/root/kamailio-py")
@@ -15,6 +17,7 @@ from pprint import pformat
 import json
 import logging
 import re
+import time
 
 import KSR
 
@@ -40,7 +43,9 @@ FLB_NATB=6
 FLB_NATSIPPING=7
 BAD_AGENTS = {"friendly", "scanner", "sipcli", "sipvicious"}
 
-from config import PROVIDER,ROUTE,nr_fix
+import config
+from config import PROVIDER,nr_fix
+
 SRC = {}
 k = v = vv = None
 for k,v in PROVIDER.items():
@@ -56,17 +61,6 @@ del vv
 # Global info logger, set in mod_init. TODO remove.
 log = None
 
-# global function to instantiate a kamailio class object
-# -- executed when kamailio app_python module is initialized
-def mod_init():
-    log_.init(stderr=True)
-    global log
-    logger = logging.getLogger("main")
-    log = logger.info
-    trace_enable(DEF.WITH_PYTRACE)
-
-    return kamailio(logger=logger)
-
 
 # -- {start defining kamailio class}
 class kamailio:
@@ -80,7 +74,7 @@ class kamailio:
         thread_state.setup(rank)
         return 0
 
-    def background(self, txt):
+    def background(self, txt, ttt):
         i=0
         while True:
             print("BG",i,txt)
@@ -197,7 +191,7 @@ class kamailio:
         if PV.tu == "":
             PV.tu = dnr
 
-        dst = ROUTE(dnr,src)
+        dst = config.ROUTE(dnr,src)
         if dst:
             dstnr,dst = dst
         else:
@@ -228,6 +222,7 @@ class kamailio:
 #           elif prov.use_port:
 #               PV.fsn = f"s_{prov.transport}"
             PV.ru = f"sip:{dstnr}@{prov.last_addr}:{prov.port};transport={prov.transport}"
+            self.log.info(f"DEST {prov.domain}: {PV.ru}")
 
         PV.td = prov.domain
         self.route_relay(msg)
@@ -288,12 +283,14 @@ class kamailio:
             try:
                 src = PROVIDER[SRC[src]]
             except KeyError:
-                pass
+                self.log.warning(f"{src}: not found")
             else:
                 if src.use_port:
-                    src.port=PV.sp
+                    src.port = PV.sp
                     src.last_addr = PV.siz
-                    self.log.info(f"{src.domain}: Use port {src.port}")
+                    self.log.info(f"{src.domain}: Use port {src.last_addr}:{src.port}")
+                else:
+                    self.log.info(f"{src.domain}: Use port is off")
 
             KSR.sl.sl_send_reply(200,"Keepalive")
             sys.exit()
@@ -564,5 +561,14 @@ class kamailio:
         self.log.debug("===== Event %r", msg)
         return 1
 
+# global function to instantiate a kamailio class object
+# -- executed when kamailio app_python module is initialized
+def mod_init(base=kamailio):
+    log_.init(stderr=True)
+    global log
+    logger = logging.getLogger("main")
+    log = logger.info
+    trace_enable(DEF.WITH_PYTRACE)
 
-# -- {end defining kamailio class}
+    return base(logger=logger)
+
