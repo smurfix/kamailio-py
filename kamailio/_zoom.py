@@ -9,6 +9,7 @@ import config
 import time
 import trio
 from pprint import pprint
+from pathlib import Path
 
 try:
     from kamailio import var
@@ -81,7 +82,7 @@ async def refresh_auth(api, task_status=trio.TASK_STATUS_IGNORED):
         await trio.sleep(1700)
 
 async def main(setup_done=lambda: None):
-    with open(os.path.join(os.pardir(__path__[0]),"_data","zoom","phone.json"),"r") as _f:
+    with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
         _s = json.load(_f)
 
     async with OpenAPI(_s) as api, trio.open_nursery() as n:
