@@ -10,6 +10,7 @@ import time
 import trio
 from pprint import pprint
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 try:
     from kamailio import var
@@ -81,14 +82,18 @@ async def refresh_auth(api, task_status=trio.TASK_STATUS_IGNORED):
         task_status.started()
         await trio.sleep(1700)
 
-async def main(setup_done=lambda: None):
+@asynccontextmanager
+async def zoom_worker():
     with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
         _s = json.load(_f)
 
     async with OpenAPI(_s) as api, trio.open_nursery() as n:
         await n.start(refresh_auth, api)
         await n.start(refresh_numbers, api)
-        setup_done()
+        try:
+            yield api
+        finally:
+            n.cancel_scope.cancel()
 
 if __name__ == "__main__":
     trio.run(main)
