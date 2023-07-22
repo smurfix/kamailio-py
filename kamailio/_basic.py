@@ -84,9 +84,11 @@ class kamailio:
     # SIP request routing. Cannot be renamed
     @trace
     def ksr_request_route(self, msg):
-        self.log.debug("")
-        self.log.debug("===== request [%s] from [%s]", PV.rm, PV.ru)
-        sip=KSR.sipjson.sj_serialize("0B","$var(debug_json)")
+        if PV.rm != "OPTIONS":
+            self.log.info("")
+            self.log.info("===== request [%s] to [%s] from [%s] (%s)\n%s", PV.rm, PV.ru, PV.fu, PV.si, PV.mb)
+
+        KSR.sipjson.sj_serialize("0B","$var(debug_json)")
         self.log.debug("Data:\n%s",pformat(json.loads(VAR.debug_json)))
 
         # per request initial checks
@@ -181,6 +183,8 @@ class kamailio:
         dstnr = PV.rU
         snr = nr_fix(srcnr, src)
         dnr = nr_fix(dstnr, src)
+        self.log.info("Data:\n%s",pformat(json.loads(VAR.debug_json)))
+        self.log.info(f"srcnr {srcnr}  snr {snr}  dtsnr {dstnr}  dnr {dnr}")
 
         if snr != srcnr:
             PV.fU = snr
@@ -223,6 +227,9 @@ class kamailio:
 #               PV.fsn = f"s_{prov.transport}"
             PV.ru = f"sip:{dstnr}@{prov.last_addr}:{prov.port};transport={prov.transport}"
             self.log.info(f"DEST {prov.domain}: {PV.ru}")
+
+        KSR.sipjson.sj_serialize("0B","$var(debug_json)")
+        self.log.info("Result:\n%s",pformat(json.loads(VAR.debug_json)))
 
         PV.td = prov.domain
         self.route_relay(msg)
@@ -537,28 +544,27 @@ class kamailio:
 
 
     # SIP response handling
-    # -- equivalent of reply_route{}
     @trace
     def reply_route(self, msg):
-        self.log.debug("")
-        self.log.debug("===== response %s", PV.rs)
+        self.log.info("")
+        self.log.info("===== reply %s (%s)\n%s", PV.rs, PV.si, PV.mb)
         return 1
 
     # SIP send-on handling
     @trace
     def onsend_route(self, msg):
-        self.log.debug("")
-        self.log.debug("===== send_on to %s:%d\n%s", SNDTO.ip,SNDTO.port, SNDTO.buf)
+        self.log.info("")
+        self.log.info("===== send_on to %s:%d\n%s", SNDTO.ip, SNDTO.port, SNDTO.buf)
         return 1
 
     def tls_event(self, msg):
-        self.log.debug("")
-        self.log.debug("===== TLS %r", msg)
+        self.log.info("")
+        self.log.info("===== TLS %r", msg)
         return 1
 
     def event_route(self, *msg):
-        self.log.debug("")
-        self.log.debug("===== Event %r", msg)
+        self.log.info("")
+        self.log.info("===== Event %r", msg)
         return 1
 
 # global function to instantiate a kamailio class object
