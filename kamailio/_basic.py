@@ -1,4 +1,4 @@
-## Kamailio - equivalent of routing blocks in Python
+##
 ##
 ## KSR - the new dynamic object exporting Kamailio functions
 ## Router - the old object exporting Kamailio functions
@@ -20,6 +20,8 @@ import re
 import time
 
 import KSR
+
+from urllib.parse import urlparse
 
 re_savp = re.compile('^m=audio \\d+ RTP/SAVP ', re.MULTILINE)
 
@@ -61,6 +63,12 @@ del vv
 # Global info logger, set in mod_init. TODO remove.
 log = None
 
+def user_from_url(url):
+    u = urlparse(url).path
+    at = u.find('@')
+    if at > -1:
+        u = u[:at]
+    return u
 
 # -- {start defining kamailio class}
 class kamailio:
@@ -186,13 +194,23 @@ class kamailio:
         self.log.info("Data:\n%s",pformat(json.loads(VAR.debug_json)))
         self.log.info(f"srcnr {srcnr}  snr {snr}  dtsnr {dstnr}  dnr {dnr}")
 
+        destfU = None
         if snr != srcnr:
-            PV.fU = snr
+            destfU = snr
         if dnr != dstnr:
             PV.tU = dnr
-        if PV.fu == "":
-            PV.fu = snr
+        if PV.fu == "":  # !!
+            PV.fu = snr  # !!
+        if PV.ai and "anonymous" not in PV.ai:
+            uu = user_from_url(PV.ai)
+            self.log.info("want fu AI %s %s =%s", PV.fu, PV.ai, uu)
+#           PV.fu = PV.ai
+            destfU = uu
+        if PV.fU == "" or PV.fU == "anonymous":
+            self.log.info("set fU ANON1 %s %s", PV.fU, snr)
+            destfU = snr
         if PV.tu == "":
+            self.log.info("set TU EMPTY %s",dnr)
             PV.tu = dnr
 
         dst = config.ROUTE(dnr,src)
@@ -211,22 +229,47 @@ class kamailio:
             sprov = PROVIDER[src]
         except AttributeError:
             return
-        else:
-            XAVU1.call_src = PV.siz
-            XAVU1.src_encrypt = sprov.encrypt or 0
-            XAVU1.dst_encrypt = prov.encrypt or 0
-            XAVU1.src_encrypt_opt = sprov.encrypt_options or ""
-            XAVU1.dst_encrypt_opt = prov.encrypt_options or ""
-            if prov.transport == "tls":
-                XAVP["tls"]._push(server_name=prov.domain, server_id=prov.domain)
-#           if not prov.port:
-#               self.log.warning("Provider %s doesn't have a port", prov.domain)
-#               KSR.sl.sl_send_reply(480, "No link")
-#               sys.exit()
-#           elif prov.use_port:
-#               PV.fsn = f"s_{prov.transport}"
-            PV.ru = f"sip:{dstnr}@{prov.last_addr}:{prov.port};transport={prov.transport}"
-            self.log.info(f"DEST {prov.domain}: {PV.ru}")
+
+        XAVU1.call_src = PV.siz
+        XAVU1.src_encrypt = sprov.encrypt or 0
+        XAVU1.dst_encrypt = prov.encrypt or 0
+        XAVU1.src_encrypt_opt = sprov.encrypt_options or ""
+        XAVU1.dst_encrypt_opt = prov.encrypt_options or ""
+        if prov.transport == "tls":
+            XAVP["tls"]._push(server_name=prov.domain, server_id=prov.domain)
+#       if not prov.port:
+#           self.log.warning("Provider %s doesn't have a port", prov.domain)
+#           KSR.sl.sl_send_reply(480, "No link")
+#           sys.exit()
+#       elif prov.use_port:
+#           PV.fsn = f"s_{prov.transport}"
+
+        nru = f"sip:{dstnr}@{prov.last_addr}:{prov.port};transport={prov.transport}"
+        self.log.info("set tu %s %s", PV.fU, nru)
+        PV.ru = nru
+
+# probably not, wrong prov
+#       ntu = f"sip:{dstnr}@{prov.last_addr}"
+#       self.log.info("want tu %s %s", PV.tu, ntu)
+#       PV.tu = ntu
+
+        self.log.info("set tU %s %s", PV.tU, dstnr)
+        PV.tU = dstnr
+
+        self.log.info("set rU %s %s", PV.rU, dstnr)
+        PV.rU = dstnr
+
+        if PV.fu == "" or "anonymous" in PV.fu:
+            nfu = f"sip:{snr}@{sprov.last_addr}"
+            self.log.info("want fu ANON %s %s",PV.fu, nfu)
+            self.log.info("set fU ANON %s %s",PV.fU, snr)
+#           PV.fu = nfu
+            destfU = snr
+
+        if destfU is not None:
+            PV.fU = destfU
+        if PV.fn == "anonymous" and sprov.display is not None:
+            PV.fn = sprov.display
 
         KSR.sipjson.sj_serialize("0B","$var(debug_json)")
         self.log.info("Result:\n%s",pformat(json.loads(VAR.debug_json)))
@@ -295,9 +338,9 @@ class kamailio:
                 if src.use_port:
                     src.port = PV.sp
                     src.last_addr = PV.siz
-                    self.log.info(f"{src.domain}: Use port {src.last_addr}:{src.port}")
-                else:
-                    self.log.info(f"{src.domain}: Use port is off")
+#                   self.log.info(f"{src.domain}: Use port {src.last_addr}:{src.port}")
+#               else:
+#                   self.log.info(f"{src.domain}: Use port is off")
 
             KSR.sl.sl_send_reply(200,"Keepalive")
             sys.exit()
@@ -398,13 +441,16 @@ class kamailio:
 
         if KSR.is_REGISTER() or KSR.is_myself_furi():
             # authenticate requests
-            if KSR.auth_db.auth_check(PV.fd, "subscriber", 1)<0:
-                KSR.auth.auth_challenge(PV.fd, 0)
-                sys.exit()
+            auth = getattr(KSR, "auth", None)
+            if auth is not None:
+                auth_db = getattr(KSR, "auth_db", None)
+                if auth_db is not None and auth_db.auth_check(PV.fd, "subscriber", 1)<0:
+                    auth.auth_challenge(PV.fd, 0)
+                    sys.exit()
 
-            # user authenticated - remove auth header
-            if not KSR.is_method_in("RP"):
-                KSR.auth.consume_credentials()
+                # user authenticated - remove auth header
+                if not KSR.is_method_in("RP"):
+                    auth.consume_credentials()
 
         # if caller is not local subscriber, then check if it calls
         # a local destination, otherwise deny, not an open relay here

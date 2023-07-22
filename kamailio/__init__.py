@@ -23,7 +23,7 @@ class Provider:
     """
     use_port = False
 
-    def __init__(self,domain,transport,addr, flags=0, port=None, encrypt=False, encrypt_options=""):
+    def __init__(self,domain,transport,addr, flags=0, port=None, encrypt=False, encrypt_options="", display=None):
         if port is None:
             if transport == "tls":
                 port = 5061
@@ -40,6 +40,7 @@ class Provider:
         self.port = port
         self.encrypt = encrypt
         self.encrypt_options = encrypt_options
+        self.display = display
 
     @property
     def name(self):
