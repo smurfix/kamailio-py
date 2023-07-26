@@ -181,11 +181,16 @@ class kamailio:
                 HDR.Contact = str(h.with_uri(h.uri.with_user(snr)))
 
     def route_static(self, msg):
+        if self.fix_addrs(msg):
+            self.route_relay(msg, True)
+
+
+    def fix_addrs(self, msg):
         src = msg.src_address[0]
         try:
             src = SRC[src]
         except KeyError:
-            return
+            return 0
 
         srcnr = PV.fU
         dstnr = PV.rU
@@ -220,15 +225,15 @@ class kamailio:
             dstnr = None
         self.log.debug("ROUTE from %r: %s to %r: %s",snr,src, dstnr, dst)
         if dst is None:
-            return
+            return 0
         if src == dst:
-            return
+            return 0
 
         try:
             prov = PROVIDER[dst]
             sprov = PROVIDER[src]
         except AttributeError:
-            return
+            return 0
 
         XAVU1.call_src = PV.siz
         XAVU1.src_encrypt = sprov.encrypt or 0
@@ -275,14 +280,17 @@ class kamailio:
         self.log.info("Result:\n%s",pformat(json.loads(VAR.debug_json)))
 
         PV.td = prov.domain
-        self.route_relay(msg)
+        return 1
 
-        
 
     # wrapper around tm relay function
-    def route_relay(self, msg):
+    def route_relay(self, msg, fixed=False):
         # enable additional event routes for forwarded requests
         # - serial forking, RTP relaying handling, a.s.o.
+
+        if not fixed and KSR.is_method_in("I"):
+            self.fix_addrs(msg)
+
         if KSR.is_method_in("IBSU"):
             if KSR.tm.t_is_set("branch_route")<0:
                 KSR.tm.t_on_branch("branch_manage")
@@ -408,11 +416,15 @@ class kamailio:
     def route_location(self, msg):
         rc = KSR.registrar.lookup("location")
         if rc<0:
+            self.log.info("Lookup fails with %s", rc)
             KSR.tm.t_newtran()
             if rc==-1 or rc==-3:
                 KSR.sl.send_reply(404, "Not Found")
                 sys.exit()
             elif rc==-2:
+                KSR.sl.send_reply(405, "Method Not Allowed")
+                sys.exit()
+            else:
                 KSR.sl.send_reply(405, "Method Not Allowed")
                 sys.exit()
 
