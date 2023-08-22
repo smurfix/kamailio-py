@@ -82,6 +82,31 @@ async def refresh_auth(api, task_status=trio.TASK_STATUS_IGNORED):
         task_status.started()
         await trio.sleep(1700)
 
+
+async def app_server(api, task_status=trio.TASK_STATUS_IGNORED):
+    from quart_trio import QuartTrio
+    from quart import request
+    import hmac
+    import hashlib
+    from pprint import pprint
+
+    app = QuartTrio("kazoom")
+    @app.post("/evt")
+    async def evt(*a,**k):
+        msg = (await request.json)
+        pprint(msg)
+        try:
+            msg = msg["payload"]["plainToken"]
+            signature = hmac.new(bytes(config.SECRET_TOKEN, 'utf-8'), msg = bytes(msg , 'utf-8'), digestmod = hashlib.sha256).hexdigest().lower()
+            return dict(
+                plainToken=msg,
+                encryptedToken=signature,
+            )
+        except KeyError:
+            return {}
+    await app.run_task(port=50080)
+
+
 @asynccontextmanager
 async def zoom_worker():
     with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
@@ -90,10 +115,19 @@ async def zoom_worker():
     async with OpenAPI(_s) as api, trio.open_nursery() as n:
         await n.start(refresh_auth, api)
         await n.start(refresh_numbers, api)
+        await n.start(app_server, api)
         try:
             yield api
         finally:
             n.cancel_scope.cancel()
 
 if __name__ == "__main__":
+    with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
+        _s = json.load(_f)
+
+    async def main():
+        async with OpenAPI(_s) as api, trio.open_nursery() as n:
+            await n.start(app_server, api)
+
+
     trio.run(main)
