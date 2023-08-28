@@ -65,7 +65,9 @@ async def updateNumbers(api):
 async def refresh_numbers(api, task_status=trio.TASK_STATUS_IGNORED):
     while True:
         await updateNumbers(api)
-        task_status.started()
+        if task_status is not None:
+            task_status.started()
+            task_status = None
         await trio.sleep(1200)
 
 async def app_server(api, task_status=trio.TASK_STATUS_IGNORED):
