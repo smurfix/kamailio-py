@@ -13,6 +13,9 @@ from pprint import pprint
 from pathlib import Path
 from contextlib import asynccontextmanager
 
+import logging
+logger = logging.getLogger(__name__)
+
 try:
     from kamailio import var
 except ImportError:
@@ -46,12 +49,16 @@ def updateNumber(nr):
 
 async def updateNumbers(api):
     numUnseen=set(numById.keys())
+    logger.info("Start: update numbers")
+    n = x = 0
     try:
         res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
         while True:
             for r in res.phone_numbers:
                 if r.assignee is None:
+                    x += 1
                     continue
+                n += 1
                 updateNumber(r)
 
             npt=res.next_page_token
@@ -59,11 +66,13 @@ async def updateNumbers(api):
                 break
             res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",next_page_token=npt,page_size=100))
     except Exception:
+        logger.exception("Update numbers")
         return
 
     for nid in numUnseen:
         onr = numById.pop(nid)
         del numByNr[onr.number]
+    logger.info("Done: update numbers (%d assigned, %d free)",n,x)
 
 async def refresh_numbers(api, task_status=trio.TASK_STATUS_IGNORED):
     while True:
@@ -103,6 +112,7 @@ async def refresh_token(api, sess, task_status=trio.TASK_STATUS_IGNORED):
         "client_secret": config.CLIENT_SECRET,
     }
     while True:
+        logger.info("Start: update auth")
         response = await sess.post(auth_token_url,
              auth=asks.BasicAuth((config.CLIENT_ID, config.CLIENT_SECRET),),
              data=data)
@@ -115,6 +125,7 @@ async def refresh_token(api, sess, task_status=trio.TASK_STATUS_IGNORED):
             task_status.started()
             task_status = None
         api.authenticate('Bearer', "Bearer "+access_token)
+        logger.info("Start: auth done")
         await trio.sleep(response_data["expires_in"]*2/3)
 
 @asynccontextmanager
@@ -148,4 +159,5 @@ if __name__ == "__main__":
             n.cancel_scope.cancel()
 
 
+    logging.basicConfig(level=logging.DEBUG)
     trio.run(main2)
