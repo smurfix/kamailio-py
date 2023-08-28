@@ -46,17 +46,20 @@ def updateNumber(nr):
 
 async def updateNumbers(api):
     numUnseen=set(numById.keys())
-    res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
-    while True:
-        for r in res.phone_numbers:
-            if r.assignee is None:
-                continue
-            updateNumber(r)
-            
-        npt=res.next_page_token
-        if not npt:
-            break
-        res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",next_page_token=npt,page_size=100))
+    try:
+        res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
+        while True:
+            for r in res.phone_numbers:
+                if r.assignee is None:
+                    continue
+                updateNumber(r)
+
+            npt=res.next_page_token
+            if not npt:
+                break
+            res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",next_page_token=npt,page_size=100))
+    except Exception:
+        return
 
     for nid in numUnseen:
         onr = numById.pop(nid)
