@@ -32,7 +32,8 @@ def updateNumber(nr):
         pass
     else:
         del numByNr[onr.number]
-        del var.SHV[shvPrefix+onr.number]
+        if var is not None:
+            del var.SHV[shvPrefix+onr.number]
 
     if not nr.carrier or nr.carrier.name != 'BYOC':
         return
