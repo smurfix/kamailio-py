@@ -45,7 +45,7 @@ def updateNumber(nr):
 
 async def updateNumbers(api):
     numUnseen=set(numById.keys())
-    res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100))
+    res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
     while True:
         for r in res.phone_numbers:
             if r.assignee is None:
