@@ -15,7 +15,7 @@ API_SECRET = "YOUR_API_SECRET_HERE"
 here = re.compile("(\\+4969|004969|069|)90009")
 
 def ROUTE(nr):
-    m = loc.match(nr)
+    m = here.match(nr)
     if m:
         return "+496990009"+nr[m.end():],"pbx"
 
