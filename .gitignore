@@ -1,5 +1,8 @@
 __pycache__/
 /real/
+/kamailio.egg-info/
+/build/
+/.pybuild/
 
 # Debian packaging
 /debian/
