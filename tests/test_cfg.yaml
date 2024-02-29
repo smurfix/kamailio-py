@@ -1,0 +1,58 @@
+default: "98765"
+country: 49
+city: 911
+
+emergency:
+- "110"
+- "112"
+
+direct:
+- match: "([12][0-9][0-9]|[12][0-9][0-9][0-9])$"
+  prefix: "+493450"
+
+pre-route:
+- match: "3331"
+  result: "3332"
+  dest: pa
+- match: "3333"
+  result: "3334"
+- match: "3335"
+  dest: pc
+route:
+- match: "12(.*)"
+  result: "1212$1"
+  dest: "pb"
+- match: "23(.*)"
+  result: "+34$1"
+  dest: "pa"
+- match: "24(.*)"
+  dest: "pa"
+- match: "5(.*)"
+  result: "0067$189"
+  dest: "pc"
+- match: "6.*"
+  dest: "pc"
+
+provider:
+  pa:
+    addr: 10.1.1.1
+    domain: a.test.example
+    a_in: null
+    b_in: false
+    a_out: true
+    b_out: true
+  pb:
+    addr: 10.2.2.2
+    domain: b.test.example
+    a_in: false
+    b_in: true
+    a_out: null
+    b_out: false
+  pc:
+    addr: 10.3.3.3
+    domain: c.test.example
+    a_in: true
+    b_in: null
+    a_out: false
+    b_out: null
+
