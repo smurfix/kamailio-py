@@ -2,11 +2,13 @@
 Main code for processing kamailio requests.
 """
 
-from contextlib import suppress
-import logging
+from __future__ import annotations
 
-from kamailio._basic import Kamailio
+import logging
+from contextlib import suppress
+
 import kamailio.log as log_
+from kamailio._basic import Kamailio
 from kamailio.trace import trace_enable
 
 logger = logging.getLogger("main")

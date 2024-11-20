@@ -61,7 +61,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["ANN","PTH","PERF", "D105", "D107","A003","S101","RUF001","RUF002","PLW1514", "D2","D3","D4","T2","FBT","TRY003","EM10","PLR","C","RET50","TD","FIX","N","ERA","BLE001","COM812","ISC001","UP038"]
+ignore = ["D1", "ANN","PTH","PERF", "D105", "D107","A003","S101","RUF001","RUF002","PLW1514", "D2","D3","D4","T2","FBT","TRY003","EM10","PLR","C","RET50","TD","FIX","N","ERA","BLE001","COM812","ISC001","UP038","G004","SIM102"]
 explicit-preview-rules = true
 
 [tool.ruff.lint.flake8-comprehensions]

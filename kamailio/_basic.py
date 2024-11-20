@@ -5,29 +5,26 @@
 ##
 ##
 ## This is a sample implementation which
+from __future__ import annotations
 
-import sys
-
-sys.path.insert(0, "/root/kamailio-py")
-from kamailio import var, thread_state
-from kamailio import log as log_
-from kamailio.trace import trace, trace_enable
-from ursine.header import Header
-
-from pprint import pformat
 import json
 import logging
 import re
-import time
-import logging
+import sys
+from importlib import import_module
+from pprint import pformat
+from urllib.parse import urlparse
+
+from kamailio import thread_state, var
+from kamailio.trace import trace
 
 import KSR
-
-from urllib.parse import urlparse
+import trio
+from ursine.header import Header
 
 logger = logging.getLogger("kamailio.basic")
 
-exit = sys.exit  # *sigh*
+exit = sys.exit  # *sigh*  # noqa:A001
 
 re_savp = re.compile("^m=audio \\d+ RTP/SAVP ", re.MULTILINE)
 
@@ -72,7 +69,7 @@ class Kamailio:
     def __init__(self, cfg, logger=None):
         self.cfg = cfg
         if logger is None:
-            logger = lambda *a: 0
+            logger = lambda *a: 0  # noqa:ARG005,E731
         self.log = logger
 
         self.SRC = {}
@@ -250,7 +247,7 @@ class Kamailio:
         XAVU1.src_encrypt_opt = src.encrypt_options or ""
         XAVU1.dst_encrypt_opt = dst.encrypt_options or ""
         if dst.transport == "tls":
-            XAVP["tls"]._push(server_name=dst.domain, server_id=dst.domain)
+            XAVP["tls"]._push(server_name=dst.domain, server_id=dst.domain)  # noqa:SLF001
         #       if not dst.port:
         #           self.log.warning("Provider %s doesn't have a port", dst.domain)
         #           KSR.sl.sl_send_reply(480, "No link")
@@ -317,8 +314,10 @@ class Kamailio:
 
         exit()
 
-    # Per SIP request initial checks
     def route_reqinit(self, msg):
+        """
+        Per SIP request initial checks
+        """
         if not KSR.is_myself(PV.si) and False:  # WITH_ANTIFLOOD
             if not KSR.pv.is_null("$sht(ipban=>$si)"):
                 # ip is already blocked
@@ -365,8 +364,10 @@ class Kamailio:
             self.log.error(f"Malformed SIP message from {PV.si}:{PV.sp}")
             exit()
 
-    # Handle requests within SIP dialogs
     def route_withindlg(self, msg):
+        """
+        Handle requests within SIP dialogs
+        """
         if KSR.siputils.has_totag() < 0:
             return 1
 
@@ -403,8 +404,12 @@ class Kamailio:
         KSR.sl.sl_send_reply(404, "Not here")
         exit()
 
-    # Handle SIP registrations
     def route_registrar(self, msg):
+        """
+        Handle SIP registrations
+        """
+        msg  # noqa:B018
+
         if not KSR.is_REGISTER():
             return 1
         if KSR.isflagset(FLT_NATS):
@@ -417,8 +422,10 @@ class Kamailio:
 
         exit()
 
-    # User location service
     def route_location(self, msg):
+        """
+        User location service
+        """
         rc = KSR.registrar.lookup("location")
         if rc < 0:
             self.log.info("Lookup fails with %s", rc)
@@ -440,11 +447,13 @@ class Kamailio:
         self.route_relay(msg)
         exit()
 
-    # IP authorization and user authentication.
     def route_auth(self, msg):
+        """
+        IP authorization and user authentication.
+        """
         # Known providers are skipped here.
         try:
-            src = self.SRC[msg.src_address[0]]
+            src = self.SRC[msg.src_address[0]]  # noqa:F841
         except KeyError:
             pass
         else:
@@ -474,8 +483,12 @@ class Kamailio:
             KSR.sl.sl_send_reply(403, "Not relaying")
             exit()
 
-    # Caller NAT detection
     def route_natdetect(self, msg):
+        """
+        Caller NAT detection
+        """
+        msg  # noqa:B018
+
         KSR.force_rport()
         if hasattr(KSR, "nathelper") and KSR.nathelper.nat_uac_test(19) > 0:
             if KSR.is_REGISTER():
@@ -485,8 +498,12 @@ class Kamailio:
 
             KSR.setflag(FLT_NATS)
 
-    # RTPProxy control
     def route_natmanage(self, msg):
+        """
+        RTPProxy control
+        """
+        msg  # noqa:B018
+
         if KSR.siputils.is_request() > 0:
             if KSR.siputils.has_totag() > 0:
                 if KSR.rr.check_route_param("nat=yes") > 0:
@@ -497,16 +514,13 @@ class Kamailio:
 
         if DEF.WITH_NAT:
             if DEF.WITH_RTPENGINE:
-                if XAVU1.call_src == PV.siz:
+                if XAVU1.call_src == PV.siz:  # noqa:SIM108
                     enc = XAVU1.dst_encrypt
                 else:
                     enc = XAVU1.src_encrypt
                 src_opt = XAVU1.src_encrypt_opt or ""
                 dst_opt = XAVU1.dst_encrypt_opt or ""
-                if enc:
-                    opt = "RTP/SAVP"
-                else:
-                    opt = "RTP/AVP"
+                opt = "RTP/SAVP" if enc else "RTP/AVP"
                 opt = f"{opt} {src_opt} {dst_opt}"
 
                 if KSR.nathelper.nat_uac_test(8):
@@ -533,15 +547,20 @@ class Kamailio:
 
         return 1
 
-    # URI update for dialog requests
     def route_dlguri(self, msg):
+        """
+        URI update for dialog requests
+        """
+        msg  # noqa:B018
         if not KSR.isdsturiset():
             KSR.nathelper.handle_ruri_alias()
 
         return 1
 
-    # Routing to foreign domains
     def route_sipout(self, msg):
+        """
+        Routing to foreign domains
+        """
         if KSR.is_myself_ruri():
             return 1
 
@@ -549,10 +568,13 @@ class Kamailio:
         self.route_relay(msg)
         exit()
 
-    # Manage outgoing branches
-    # -- equivalent of branch_route[...]{}
     @trace
     def branch_manage(self, msg):
+        """
+        Manage outgoing branches
+        """
+        # -- equivalent of branch_route[...]{}
+
         self.log.debug("")
         self.log.debug(f"===== new branch [{PV.T_branch_idx}] to {PV.ru}")
 
@@ -572,24 +594,30 @@ class Kamailio:
         self.route_natmanage(msg)
         return 1
 
-    # Manage incoming replies
-    # -- equivalent of onreply_route[...]{}
     @trace
     def onreply_manage(self, msg):
+        """
+        Manage incoming replies
+        """
+        # -- equivalent of onreply_route[...]{}
+
         scode = PV.rs
         self.log.debug("")
-        self.log.debug(f"===== reply: %s", scode)
+        self.log.debug("===== reply: %s", scode)
         if scode > 100 and scode < 299:
             self.route_natmanage(msg)
 
         return 1
 
-    # Manage failure routing cases
-    # -- equivalent of failure_route[...]{}
     @trace
     def failure_manage(self, msg):
+        """
+        Manage failure routing cases
+        """
+        # -- equivalent of failure_route[...]{}
+
         self.log.debug("")
-        self.log.debug(f"===== Failure: %s", PV.rs)
+        self.log.debug("===== Failure: %s", PV.rs)
         self.route_natmanage(msg)
 
         if KSR.tm.t_is_canceled() > 0:
@@ -597,18 +625,22 @@ class Kamailio:
 
         return 1
 
-    # SIP response handling
     @trace
     def reply_route(self, msg):
+        """
+        SIP response handling
+        """
         self.log.info("")
-        self.log.info("===== reply %s (%s)\n%s", PV.rs, PV.si, PV.mb)
+        self.log.info("===== reply %s (%s)\n%s\n%s", PV.rs, PV.si, msg, PV.mb)
         return 1
 
-    # SIP send-on handling
     @trace
     def onsend_route(self, msg):
+        """
+        SIP send-on handling
+        """
         self.log.info("")
-        self.log.info("===== send_on to %s:%d\n%s", SNDTO.ip, SNDTO.port, SNDTO.buf)
+        self.log.info("===== send_on to %s:%d\n%s\n%s", SNDTO.ip, SNDTO.port, msg, SNDTO.buf)
         return 1
 
     def tls_event(self, msg):

@@ -1,18 +1,18 @@
 ##
 ##
 ##
+from __future__ import annotations
 
-from openapi3 import OpenAPI
 import json
-import sys
-import time
-import trio
-import asks
-from pprint import pprint
-from pathlib import Path
-from contextlib import asynccontextmanager
-
 import logging
+import sys
+from contextlib import asynccontextmanager
+from pathlib import Path
+from pprint import pprint
+
+import asks
+import trio
+from openapi3 import OpenAPI
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ try:
 except ImportError:
     var = None
 
-auth_token_url = "https://zoom.us/oauth/token"
+auth_token_url = "https://zoom.us/oauth/token"  # noqa:S105
 
 
 class ZoomWrapper:
@@ -88,18 +88,18 @@ class ZoomWrapper:
 
     async def refresh_numbers(self, task_status=trio.TASK_STATUS_IGNORED):
         while True:
-            await updateNumbers(self.api)
+            await self.updateNumbers(self.api)
             if task_status is not None:
                 task_status.started()
                 task_status = None
             await trio.sleep(1200)
 
     async def app_server(self, task_status=trio.TASK_STATUS_IGNORED):
-        from quart_trio import QuartTrio
-        from quart import request
-        import hmac
         import hashlib
-        from pprint import pprint
+        import hmac
+
+        from quart import request
+        from quart_trio import QuartTrio
 
         token = self.cfg.params["zoom"]["token"]
 
@@ -107,6 +107,7 @@ class ZoomWrapper:
 
         @app.post("/evt")
         async def evt(*a, **k):
+            a, k  # noqa:B018
             msg = await request.json
             pprint(msg)
             try:
@@ -125,7 +126,7 @@ class ZoomWrapper:
             except KeyError:
                 return {}
 
-        await app.run_task(port=50080)
+        await app.run_task(port=50080, task_status=task_status)
 
     async def refresh_token(self, task_status=trio.TASK_STATUS_IGNORED):
         cred = self.cfg["zoom"]["cred"]

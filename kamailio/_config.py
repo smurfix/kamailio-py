@@ -101,9 +101,14 @@ The configuration is a YAML file::
 Internally phone numbers always are in 49911… format.
 """
 
+from __future__ import annotations
+
 import re
-import yaml
 import sqlite3
+from contextlib import suppress
+
+import yaml
+
 from ._provider import Provider
 from ._util import match
 
@@ -130,12 +135,15 @@ class UnknownProvider(ValueError):
 
 class Cfg:
     def __init__(
-        self, cfg="/etc/kamailio/config.yaml", secret="/etc/kamailio/secrets.yaml", test_load=False
+        self,
+        cfg="/etc/kamailio/config.yaml",
+        secret="/etc/kamailio/secrets.yaml",  # noqa:S107
+        test_load=False,
     ):
-        with open(secret, "r") as f:
+        with open(secret) as f:
             sec = yaml.SafeLoader(f).get_single_data()
 
-        with open(cfg, "r") as f:
+        with open(cfg) as f:
             cfg = SecretLoader(sec, f).get_single_data()
 
         self.cfg = cfg
@@ -144,11 +152,7 @@ class Cfg:
             return
 
         for k in k_global:
-            try:
-                setattr(self, k, cfg[k])
-            except KeyError:
-                if not in_test:
-                    raise
+            setattr(self, k, cfg[k])
         self.pre_routes = []
         self.routes = []
 
@@ -164,7 +168,7 @@ class Cfg:
         def pfix(rt):
             m = rt["match"]
             if isinstance(m, int):
-                raise ValueError("Match {m} must be a string")
+                raise ValueError("Match {m} must be a string")  # noqa:TRY004
             if "result" in rt and isinstance(rt["result"], int):
                 raise ValueError(f"Result {rt['result']} must be a string")
             rt["match"] = re.compile(rt["match"])
@@ -172,7 +176,7 @@ class Cfg:
                 try:
                     rt["dest"] = self.provider[fn]
                 except KeyError:
-                    raise UnknownProvider(rt["match"].pattern, fn)
+                    raise UnknownProvider(rt["match"].pattern, fn) from None
 
         try:
             dbp = cfg["database"]["path"]
@@ -182,13 +186,15 @@ class Cfg:
         db = sqlite3.connect(dbp)
         try:
             cur = db.cursor()
-            try:
+            with suppress(sqlite3.OperationalError):
                 cur.execute("drop table uacreg")
-            except sqlite3.OperationalError:
-                pass
-            cur.execute(
-                "create table uacreg(l_uuid, l_username, l_domain, r_username, r_domain, realm, auth_username, auth_password, auth_proxy, expires)"
-            )
+            cur.execute("""
+                create table uacreg(
+                    l_uuid, l_username, l_domain,
+                    r_username, r_domain,
+                    realm, auth_username, auth_password, auth_proxy,
+                    expires)
+                """)
             db.commit()
 
             for k, pd in self.provider.items():
@@ -204,10 +210,10 @@ class Cfg:
                         l_domain=s["domain"],
                         r_username=pd.get("name", k),
                         r_domain=pd["domain"],
-                        realm=pd.get("realm", r_domain),
+                        realm=pd.get("realm", pd["domain"]),
                         auth_username=pd["reg"]["user"],
                         auth_password=pd["reg"]["pass"],
-                        auth_proxy=pd.get("proxy", r_domain),
+                        auth_proxy=pd.get("proxy", pd["domain"]),
                         expires=pd.get("expires", 3600),
                     )
                     k1 = ", ".join(ins)

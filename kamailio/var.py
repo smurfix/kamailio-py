@@ -3,10 +3,11 @@ This module exports a number of classes that allow you to access
 several Kamalio data structures in a more Pythonic way.
 """
 
-import os
+from __future__ import annotations
 
-from threading import Lock
 import logging
+import os
+from threading import Lock
 
 import KSR
 
@@ -117,6 +118,8 @@ class _sub(_get):
         #           logger.debug("GET %s %r = %r", ok, k, res)
         #       else:
         #           logger.debug("GET %r = %r", k, res)
+        ok  # noqa:B018
+
         return res
 
     def _set(self, k, v, ok=None):
@@ -124,6 +127,7 @@ class _sub(_get):
         #           logger.debug("SET %s %r = %r", ok, k, v)
         #       else:
         #           logger.debug("SET %r = %r", k, v)
+        ok  # noqa:B018
 
         if isinstance(v, int):
             KSR.pv.seti(k, v)
@@ -235,11 +239,12 @@ class AVP(_sub):
     def _pop(self, k):
         res = self.__getitem__(k)
         super().__setitem__(k, None)
+        return res
 
 
 class _xavp(_sub):
     def __init__(self, p, k):
-        self._what = p._what
+        self._what = p._what  # noqa:SLF001
         self._k = k
 
     def _key(self, k):
@@ -455,7 +460,7 @@ _it_lock = Lock()
 def sym():
     """Generates a guaranteed-unique symbol."""
     with _it_lock():
-        global _it
+        global _it  # noqa:PLW0603
         _it += 1
         return f"i_{os.getpid()}_{_it}"
 
@@ -469,15 +474,16 @@ class _lookup_sub(_sub):
 
     def __enter__(self):
         if not self.parent.lookup_(self.sym, *self.args, **self.kwargs):
-            raise RuntimeError(f"")
+            raise RuntimeError("")
         return self
 
     def __exit__(self, *tb):
         self.parent.cleanup_(self.sym)
 
     def __iter__(self):
-        for i in range(self[parent._count]):
-            yield self[i]
+        raise RuntimeError("COUNT: ?")
+        # for i in range(self.parent._count):
+        #     yield self[i]
 
 
 class _lookup_subi(_subi, _lookup_sub):
@@ -509,6 +515,7 @@ class _lookup:
     cls_ = _lookup_sub
 
     def lookup_(self, sym, *args, **kws):
+        sym, args, kws  # noqa:B018
         raise TypeError("override me")
 
     def cleanup_(self, sym):
@@ -618,12 +625,12 @@ class _sub_val(_get):
     Helper for indexed pseudovariables.
     """
 
-    def __init__(self, parent, name):
+    def __init__(self, parent, i):
         self.parent = parent
         self.i = i
 
     def _key(self, name):
-        return f"${parent.what_}=>{name}({self.i})"
+        return f"${self.parent.what_}=>{name}({self.i})"
 
 
 class HDR(_sub):
@@ -638,7 +645,7 @@ class HDR(_sub):
     what_ = "hdr"
 
     @staticmethod
-    def __iter__(self):
+    def __iter__():
         it = sym()
         KSR.textopsx.hf_iterator_start(it)
         try:
@@ -691,7 +698,7 @@ NHDR = NHDR()
 
 class BDY:
     @staticmethod
-    def __iter__(self):
+    def __iter__():
         it = sym()
         KSR.textopsx.bf_iterator_start(it)
         try:
@@ -699,8 +706,6 @@ class BDY:
                 yield PV(f"$bitval({it})")
         finally:
             KSR.textopsx.bf_iterator_end(it)
-
-        return _bdy_iter()
 
 
 BDY = BDY()

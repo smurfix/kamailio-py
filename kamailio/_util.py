@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 _nr = re.compile(r"\$(\d)")

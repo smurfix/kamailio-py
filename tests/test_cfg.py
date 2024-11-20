@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from kamailio._config import Cfg
 
 _tests = [
@@ -20,7 +22,7 @@ def test_basic():
         sp = c.provider[sp]
         dp = None if dp == "-" else c.provider[dp]
 
-        ia = sp.format_a_in(sa)
+        ia = sp.format_a_in(sa)  # noqa:F841
         r = c.route(sb, sp)
         sa = sp.format_a_in(sa)
         if r is None:
@@ -33,4 +35,4 @@ def test_basic():
             if rp:
                 ra = rp.format_a_out(ra)
 
-        assert (da, db, dp) == (ra, rb, rp), f"{sd} {ra}:{rb}:{rp._name if rp else '-'}"
+        assert (da, db, dp) == (ra, rb, rp), f"{sd} {ra}:{rb}:{rp._name if rp else '-'}"  # noqa:SLF001

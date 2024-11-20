@@ -2,6 +2,8 @@
 Class to hold provider data
 """
 
+from __future__ import annotations
+
 from ._util import match
 
 try:
@@ -46,10 +48,7 @@ class Provider:
         b_out=None,
     ):
         if port is None:
-            if transport == "tls":
-                port = 5061
-            else:
-                port = 5060
+            port = 5061 if transport == "tls" else 5060
         elif port == 0:
             self.use_port = True
 

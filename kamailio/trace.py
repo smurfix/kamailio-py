@@ -1,12 +1,11 @@
 # Logging handler that hooks into Kamailio
+from __future__ import annotations
 
 import functools
+import linecache
 import logging
 import os
 import sys
-import linecache
-
-import KSR
 
 from . import thread_state
 
@@ -51,10 +50,7 @@ def fname(frame):
 def tdebug(frame, txt, atxt="", plus=0):
     if thread_state.log_limit < 0:
         return
-    if frame is None:
-        fn = "??"
-    else:
-        fn = fpos(frame)
+    fn = fpos(frame) if frame is not None else "??"
     if atxt:
         atxt = f" :: {atxt}"
     tracelog.debug(
@@ -87,15 +83,17 @@ def enter(frame, back=True):
         return True
 
     # tdebug(frame, ">  ", txt, plus=-1)
+    txt  # noqa:B018
     return False
 
 
-def exit(frame, back=True):
+def _exit(frame, back=True):
     txt = ""
     if frame and back:
         txt = fname(frame)
         frame = frame.f_back
 
+    txt  # noqa:B018
     thread_state.log_level -= 1
     if limited(0):
         # if not back:
@@ -139,13 +137,13 @@ def tracer(prof, frame, event, arg):
     elif event == "return":
         if prof:
             return
-        if exit(frame, back=True):
+        if _exit(frame, back=True):
             return
 
         log_frame(frame.f_back, f"< {arg!r}", -1)
 
     elif event == "c_return":
-        if exit(frame, back=False):
+        if _exit(frame, back=False):
             return
 
         # XXX enable this when Python can return the value
@@ -160,7 +158,7 @@ def tracer(prof, frame, event, arg):
         log_frame(frame, f"E {arg[1]!r}", -1)
 
     elif event == "c_exception":
-        if exit(frame, back=False):
+        if _exit(frame, back=False):
             return
         # log_frame(frame,f"E {arg[1] !r}",-1)
         # XXX Python doesn't report the exception
@@ -195,7 +193,7 @@ def skip_log(frame, oframe=None):
         return True
     if "/kamailio/log." in frame.f_code.co_filename:
         return True
-    if "/kamailio/" in frame.f_code.co_filename:
+    if "/kamailio/" in frame.f_code.co_filename:  # noqa:SIM103
         return False
     return True
 
@@ -235,5 +233,5 @@ def trace(proc):
 
 
 def trace_enable(flag):
-    global _do_trace
+    global _do_trace  # noqa:PLW0603
     _do_trace = flag

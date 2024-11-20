@@ -1,4 +1,5 @@
 # Logging handler that hooks into Kamailio
+from __future__ import annotations
 
 import logging
 import sys
@@ -62,10 +63,10 @@ class KSRHandler(logging.Handler):
 
 
 def init(stderr=False):
-    global _stdin, _stdout
+    global _stdin, _stdout  # noqa:PLW0602
     try:
-        sys.stdin = open("/dev/tty", "r")
-        sys.stdout = open("/dev/tty", "w")
+        sys.stdin = open("/dev/tty")  # noqa:SIM115
+        sys.stdout = open("/dev/tty", "w")  # noqa:SIM115
     except OSError:
         pass
 

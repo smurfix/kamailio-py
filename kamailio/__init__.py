@@ -1,6 +1,15 @@
 # everybody needs these
+from __future__ import annotations
 
 import threading
+from sys import exit  # noqa:F401
+
+from . import log as log  # noqa:PLC0414  # ruff bug *sigh*
+
+try:  # noqa:SIM105
+    from . import var  # noqa:F401
+except ImportError:
+    pass
 
 
 class _State(threading.local):
@@ -11,12 +20,3 @@ class _State(threading.local):
 
 
 thread_state = _State()
-
-
-from sys import exit
-from . import log
-
-try:
-    from . import var
-except ImportError:
-    pass
