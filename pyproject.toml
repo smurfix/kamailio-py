@@ -52,3 +52,32 @@ disable="wrong-import-order,ungrouped-imports,too-many-nested-blocks,unspecified
 
 [tool.black]
 line-length = 99
+
+
+[tool.ruff]
+preview = true
+line-length = 99
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["ANN","PTH","PERF", "D105", "D107","A003","S101","RUF001","RUF002","PLW1514", "D2","D3","D4","T2","FBT","TRY003","EM10","PLR","C","RET50","TD","FIX","N","ERA","BLE001","COM812","ISC001","UP038"]
+explicit-preview-rules = true
+
+[tool.ruff.lint.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = true
+
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["id","help"]
+
+[tool.ruff.lint.isort]
+no-lines-before = ["future"]
+required-imports = ["from __future__ import annotations"]
+section-order = ["future","standard-library","first-party","third-party","moat","local-folder","upy","typing"]
+extra-standard-library = ["pytest", "anyio"]
+force-to-top = ["moat.util"]
+
+[tool.ruff.lint.isort.sections]
+"moat" = ["moat"]
+"upy" = ["micropython", "machine", "esp"]
+"typing" = ["typing"]
