@@ -122,7 +122,10 @@ class SecretLoader(yaml.SafeLoader):
 
 
 def load_secret(loader, node):
-    return loader.secret[node.value]
+    v = loader.secret
+    for k in node.value.split("."):
+        v = v[k]
+    return v
 
 
 SecretLoader.add_constructor("!secret", load_secret)
