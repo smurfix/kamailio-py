@@ -90,10 +90,12 @@ class Kamailio:
         "background process"
         async with trio.open_nursery() as n:
             for task in self.cfg.setup:
+                logger.debug("Run: %s", task)
                 m, a = task.rsplit(".", 1)
                 m = import_module(m)
                 a = getattr(m, a)
                 n.start_soon(a, self)
+            logger.debug("Startup done.")
 
     def background(self, *x):
         logger.debug("Background Start %r", x)
