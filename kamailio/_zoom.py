@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from pprint import pprint
 
-import asks
+import httpx
 import trio
 from openapi3 import OpenAPI
 
@@ -132,16 +132,14 @@ class ZoomWrapper:
         cred = self.cfg["zoom"]["cred"]
         data = {
             "grant_type": "account_credentials",
-            "account_id": cred["acct"],
+            "account_id": cred["account"],
             "client_secret": cred["secret"],
         }
         while True:
             logger.info("Start: update auth")
             response = await self.sess.post(
                 auth_token_url,
-                auth=asks.BasicAuth(
-                    (cred["client"], cred["secret"]),
-                ),
+                auth = httpx.BasicAuth(username=cred["client"], password=cred["secret"]),
                 data=data,
             )
             if response.status_code != 200:
@@ -175,7 +173,7 @@ class ZoomWrapper:
             _s = json.load(_f)
 
         async with OpenAPI(_s) as self.api, trio.open_nursery() as n:
-            self.sess = asks.Session(connections=3)
+            self.sess = httpx.AsyncClient(limits=httpx.Limits(max_connections=3))
             if not self._debug:
                 await n.start(self.refresh_token)
                 await n.start(self.refresh_numbers)
