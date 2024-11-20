@@ -4,8 +4,7 @@
 
 from openapi3 import OpenAPI
 import json
-import jwt
-import config
+import sys
 import time
 import trio
 import asks
@@ -21,143 +20,168 @@ try:
 except ImportError:
     var=None
 
-numByNr={}
-numById={}
-numUnseen=set()
-
-shvPrefix = "zoom_"
 auth_token_url = "https://zoom.us/oauth/token"
 
-def updateNumber(nr):
-    try:
-        onr = numById.pop(nr.id)
-    except KeyError:
-        pass
-    else:
-        del numByNr[onr.number]
-        if var is not None:
-            del var.SHV[shvPrefix+onr.number]
+class ZoomWrapper:
+    shvPrefix = "zoom_"
 
-    if not nr.carrier or nr.carrier.name != 'BYOC':
-        return
+    def __init__(self, cfg, _debug=False):
+        self.cfg = cfg
 
-    numByNr[nr.number]=nr
-    numById[nr.id]=nr
-    if var is not None:
-        var.SHV[shvPrefix+nr.number] = nr.assignee is not None
-    numUnseen.discard(nr.id)
+        self.numByNr={}
+        self.numById={}
+        self.numUnseen=set()
 
-async def updateNumbers(api):
-    numUnseen=set(numById.keys())
-    logger.info("Start: update numbers")
-    n = x = 0
-    try:
-        res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
-        while True:
-            for r in res.phone_numbers:
-                if r.assignee is None:
-                    x += 1
-                    continue
-                n += 1
-                updateNumber(r)
+        self._debug = _debug
 
-            npt=res.next_page_token
-            if not npt:
-                break
-            res=await api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",next_page_token=npt,page_size=100))
-    except Exception:
-        logger.exception("Update numbers")
-        return
-
-    for nid in numUnseen:
-        onr = numById.pop(nid)
-        del numByNr[onr.number]
-    logger.info("Done: update numbers (%d assigned, %d free)",n,x)
-
-async def refresh_numbers(api, task_status=trio.TASK_STATUS_IGNORED):
-    while True:
-        await updateNumbers(api)
-        if task_status is not None:
-            task_status.started()
-            task_status = None
-        await trio.sleep(1200)
-
-async def app_server(api, task_status=trio.TASK_STATUS_IGNORED):
-    from quart_trio import QuartTrio
-    from quart import request
-    import hmac
-    import hashlib
-    from pprint import pprint
-
-    app = QuartTrio("kazoom")
-    @app.post("/evt")
-    async def evt(*a,**k):
-        msg = (await request.json)
-        pprint(msg)
+    def updateNumber(self, nr):
         try:
-            msg = msg["payload"]["plainToken"]
-            signature = hmac.new(bytes(config.SECRET_TOKEN, 'utf-8'), msg = bytes(msg , 'utf-8'), digestmod = hashlib.sha256).hexdigest().lower()
-            return dict(
-                plainToken=msg,
-                encryptedToken=signature,
-            )
+            onr = self.numById.pop(nr.id)
         except KeyError:
-            return {}
-    await app.run_task(port=50080)
+            pass
+        else:
+            del self.numByNr[onr.number]
+            if var is not None:
+                del var.SHV[self.shvPrefix+onr.number]
 
-async def refresh_token(api, sess, task_status=trio.TASK_STATUS_IGNORED):
-    data = {
-        "grant_type": "account_credentials",
-        "account_id": config.ACCT_ID,
-        "client_secret": config.CLIENT_SECRET,
-    }
-    while True:
-        logger.info("Start: update auth")
-        response = await sess.post(auth_token_url,
-             auth=asks.BasicAuth((config.CLIENT_ID, config.CLIENT_SECRET),),
-             data=data)
-        if response.status_code != 200:
-            raise RuntimeError("Unable to get access token",response.text)
-            # continue
-        response_data = response.json()
-        access_token = response_data["access_token"]
-        if task_status is not None:
-            task_status.started()
-            task_status = None
-        api.authenticate('Bearer', "Bearer "+access_token)
-        logger.info("Start: auth done")
-        await trio.sleep(response_data["expires_in"]*2/3)
+        if not nr.carrier or nr.carrier.name != 'BYOC':
+            return
 
-@asynccontextmanager
-async def zoom_worker():
-    with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
-        _s = json.load(_f)
+        self.numByNr[nr.number]=nr
+        self.self.numById[nr.id]=nr
+        if var is not None:
+            var.SHV[self.shvPrefix+nr.number] = nr.assignee is not None
+        self.numUnseen.discard(nr.id)
 
-    async with OpenAPI(_s) as api, trio.open_nursery() as n:
-        sess = asks.Session(connections=3)
-        await n.start(refresh_token, api, sess)
-        await n.start(refresh_numbers, api)
-        await n.start(app_server, api)
+    async def updateNumbers(self):
+        self.numUnseen=set(self.numById.keys())
+        logger.info("Start: update numbers")
+        n = x = 0
         try:
-            yield api
+            res=await self.api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
+            while True:
+                for r in res.phone_numbers:
+                    if r.assignee is None:
+                        x += 1
+                        continue
+                    n += 1
+                    self.updateNumber(r)
+
+                npt=res.next_page_token
+                if not npt:
+                    break
+                res=await self.api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",next_page_token=npt,page_size=100))
+        except Exception:
+            logger.exception("Update numbers")
+            return
+
+        for nid in self.numUnseen:
+            onr = self.numById.pop(nid)
+            del self.numByNr[onr.number]
+        logger.info("Done: update numbers (%d assigned, %d free)",n,x)
+
+    async def refresh_numbers(self, task_status=trio.TASK_STATUS_IGNORED):
+        while True:
+            await updateNumbers(self.api)
+            if task_status is not None:
+                task_status.started()
+                task_status = None
+            await trio.sleep(1200)
+
+    async def app_server(self, task_status=trio.TASK_STATUS_IGNORED):
+        from quart_trio import QuartTrio
+        from quart import request
+        import hmac
+        import hashlib
+        from pprint import pprint
+        token = self.cfg.params["zoom"]["token"]
+
+        app = QuartTrio("kazoom")
+        @app.post("/evt")
+        async def evt(*a,**k):
+            msg = (await request.json)
+            pprint(msg)
+            try:
+                msg = msg["payload"]["plainToken"]
+                signature = hmac.new(bytes(token, 'utf-8'), msg = bytes(msg , 'utf-8'), digestmod = hashlib.sha256).hexdigest().lower()
+                return dict(
+                    plainToken=msg,
+                    encryptedToken=signature,
+                )
+            except KeyError:
+                return {}
+        await app.run_task(port=50080)
+
+    async def refresh_token(self, task_status=trio.TASK_STATUS_IGNORED):
+        cred = self.cfg["zoom"]["cred"]
+        data = {
+            "grant_type": "account_credentials",
+            "account_id": cred["acct"],
+            "client_secret": cred["secret"],
+        }
+        while True:
+            logger.info("Start: update auth")
+            response = await self.sess.post(auth_token_url,
+                auth=asks.BasicAuth((cred["client"], cred["secret"]),),
+                data=data)
+            if response.status_code != 200:
+                raise RuntimeError("Unable to get access token",response.text)
+                # continue
+            response_data = response.json()
+            access_token = response_data["access_token"]
+            self.api.authenticate('Bearer', "Bearer "+access_token)
+
+            logger.info("Start: auth done")
+            if task_status is not None:
+                task_status.started()
+                task_status = None
+            await trio.sleep(response_data["expires_in"]*2/3)
+
+
+    __ctx = None
+
+    async def __aenter__(self):
+        self.__ctx = ctx = self._ctx()  # pylint: disable=E1101,W0201
+        return await ctx.__aenter__()
+
+    def __aexit__(self, *tb):
+        try:
+            return self.__ctx.__aexit__(*tb)
         finally:
-            n.cancel_scope.cancel()
+            self.__ctx = None
+
+    @asynccontextmanager
+    async def _ctx(self):
+        with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
+            _s = json.load(_f)
+
+        async with OpenAPI(_s) as self.api, trio.open_nursery() as n:
+            self.sess = asks.Session(connections=3)
+            if not self._debug:
+                await n.start(self.refresh_token)
+                await n.start(self.refresh_numbers)
+                await n.start(self.app_server)
+            try:
+                yield self
+            finally:
+                n.cancel_scope.cancel()
 
 if __name__ == "__main__":
     with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
         _s = json.load(_f)
 
-    async def main():
-        async with OpenAPI(_s) as api, trio.open_nursery() as n:
-            await n.start(app_server, api)
+    async def main(cfg):
+        async with ZoomWrapper(cfg, _debug=True) as z, trio.open_nursery() as n:
+            await n.start(z.app_server)
 
-    async def main2():
-        async with OpenAPI(_s) as api, trio.open_nursery() as n:
-            sess = asks.Session(connections=3)
-            await n.start(refresh_token, api, sess)
-            await updateNumbers(api)
+    async def main2(cfg):
+        async with ZoomWrapper(cfg, _debug=True) as z, trio.open_nursery() as n:
+            await n.start(z.refresh_token)
+            await z.updateNumbers()
             n.cancel_scope.cancel()
 
-
     logging.basicConfig(level=logging.DEBUG)
-    trio.run(main2)
+
+    from kamailio._config import Cfg
+    cfg = Cfg(sys.argv[1], sys.argv[2])
+    trio.run(main2, cfg)
