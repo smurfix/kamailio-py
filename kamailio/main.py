@@ -11,6 +11,7 @@ from kamailio.trace import trace_enable
 
 logger = logging.getLogger("main")
 
+
 def mod_init():
     """
     Global function to instantiate a kamailio class object.
@@ -21,10 +22,12 @@ def mod_init():
     log_.init(stderr=True)
 
     from ._config import Cfg
+
     cfg = Cfg()
     with suppress(KeyError):
         trace_enable(cfg.cfg["debug"]["trace"])
     return Kamailio(cfg, logger=logger)
 
-def child_init(*a,**k):
+
+def child_init(*a, **k):
     logger.debug("Child Init %r %r", a, k)

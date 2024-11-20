@@ -18,56 +18,67 @@ except ImportError:
 #   WARNING = 30
 
 _levels = {
-    -5: logging.CRITICAL+10, # L_ALERT
-    -4: logging.CRITICAL+5, # L_BUG
+    -5: logging.CRITICAL + 10,  # L_ALERT
+    -4: logging.CRITICAL + 5,  # L_BUG
     -3: logging.CRITICAL,
     -1: logging.ERROR,
     0: logging.WARNING,
-    1: logging.INFO+5, # L_ERR
+    1: logging.INFO + 5,  # L_ERR
     2: logging.INFO,
     3: logging.DEBUG,
 }
-_rlevels = {v:k for k,v in _levels.items()}
+_rlevels = {v: k for k, v in _levels.items()}
+
+
 def _lvl2txt(i):
-    if i <= logging.DEBUG: return "dbg"
-    if i <= logging.INFO: return "info"
-    if i <= logging.INFO+5: return "notice"
-    if i <= logging.WARNING: return "warn"
-    if i <= logging.ERROR: return "err"
+    if i <= logging.DEBUG:
+        return "dbg"
+    if i <= logging.INFO:
+        return "info"
+    if i <= logging.INFO + 5:
+        return "notice"
+    if i <= logging.WARNING:
+        return "warn"
+    if i <= logging.ERROR:
+        return "err"
     return "crit"
 
+
 logger = logging.getLogger("L")
+
 
 def _level(n):
     return _levels.get(n, logging.ERROR)
 
+
 class KSRHandler(logging.Handler):
     def emit(self, record):
-        if hasattr(KSR,"log_systemd"):
+        if hasattr(KSR, "log_systemd"):
             lvl = _rlevels[record.levelno]
             KSR.log_systemd.sd_journal_print(f"LOG_{logging.getLevelName(lvl)}", self.getMessage())
         else:
             lvl = _lvl2txt(record.levelno)
             KSR.log(lvl, record.getMessage())
 
+
 def init(stderr=False):
-    global _stdin,_stdout
+    global _stdin, _stdout
     try:
-        sys.stdin = open("/dev/tty","r")
-        sys.stdout = open("/dev/tty","w")
+        sys.stdin = open("/dev/tty", "r")
+        sys.stdout = open("/dev/tty", "w")
     except OSError:
         pass
 
     cfg = {}
     if KSR is not None:
-        cfg['handlers'] = [KSRHandler()]
+        cfg["handlers"] = [KSRHandler()]
 
     logging.basicConfig(level=logging.DEBUG, **cfg)
     if stderr:
         logging.root.addHandler(logging.StreamHandler(sys.stderr))
 
 
-def dump_obj(obj,n="?"):
+def dump_obj(obj, n="?"):
     for attr in dir(obj):
         if attr.startswith("__"):
             continue
@@ -78,12 +89,12 @@ def dump_obj(obj,n="?"):
                 try:
                     val = getattr(obj, attr)
                 except RuntimeError:
-                    continue # msg.status when not a numeric message
+                    continue  # msg.status when not a numeric message
         except SystemError:
-            logger.debug(f"{n}.{attr} = ?");
+            logger.debug(f"{n}.{attr} = ?")
         else:
-#           if callable(val):
-#               val = "…fn()"
+            #           if callable(val):
+            #               val = "…fn()"
             try:
                 val = str(val)
             except Exception as exc:

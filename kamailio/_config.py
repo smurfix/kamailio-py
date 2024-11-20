@@ -47,7 +47,7 @@ The configuration is a YAML file::
         emergency:
         - "911"
 
-        # 
+        #
         domain: sip1.voip-1und1.net
         transport: tcp
         addr: "192.168.1.2"
@@ -107,30 +107,35 @@ import sqlite3
 from ._provider import Provider
 from ._util import match
 
-k_global = ("emergency","self","setup")
+k_global = ("emergency", "self", "setup")
+
 
 class SecretLoader(yaml.SafeLoader):
     def __init__(self, secret, stream):
         self.secret = secret
         super().__init__(stream)
 
+
 def load_secret(loader, node):
     return loader.secret[node.value]
+
 
 SecretLoader.add_constructor("!secret", load_secret)
 
 
 class UnknownProvider(ValueError):
     def __str__(self):
-        return f"{self.args[0] !r} for {self.args[1] !r}"
+        return f"{self.args[0]!r} for {self.args[1]!r}"
+
 
 class Cfg:
-    def __init__(self, cfg = "/etc/kamailio/config.yaml", secret = "/etc/kamailio/secrets.yaml", test_load=False):
-
-        with open(secret,"r") as f:
+    def __init__(
+        self, cfg="/etc/kamailio/config.yaml", secret="/etc/kamailio/secrets.yaml", test_load=False
+    ):
+        with open(secret, "r") as f:
             sec = yaml.SafeLoader(f).get_single_data()
 
-        with open(cfg,"r") as f:
+        with open(cfg, "r") as f:
             cfg = SecretLoader(sec, f).get_single_data()
 
         self.cfg = cfg
@@ -147,27 +152,27 @@ class Cfg:
         self.pre_routes = []
         self.routes = []
 
-        for m in cfg.get('pre-route',()):
+        for m in cfg.get("pre-route", ()):
             self.pre_routes.append(m)
 
-        for m in cfg.get('route',()):
+        for m in cfg.get("route", ()):
             self.routes.append(m)
 
-        self.provider = cfg.setdefault("provider",{})
+        self.provider = cfg.setdefault("provider", {})
 
         # change route destinations to point to providers directly
         def pfix(rt):
-            m = rt['match']
-            if isinstance(m,int):
+            m = rt["match"]
+            if isinstance(m, int):
                 raise ValueError("Match {m} must be a string")
-            if 'result' in rt and isinstance(rt['result'],int):
+            if "result" in rt and isinstance(rt["result"], int):
                 raise ValueError(f"Result {rt['result']} must be a string")
-            rt['match'] = re.compile(rt['match'])
-            if (fn := rt.get('dest', None)) is not None:
+            rt["match"] = re.compile(rt["match"])
+            if (fn := rt.get("dest", None)) is not None:
                 try:
-                    rt['dest'] = self.provider[fn]
+                    rt["dest"] = self.provider[fn]
                 except KeyError:
-                    raise UnknownProvider(rt['match'].pattern, fn)
+                    raise UnknownProvider(rt["match"].pattern, fn)
 
         try:
             dbp = cfg["database"]["path"]
@@ -181,30 +186,32 @@ class Cfg:
                 cur.execute("drop table uacreg")
             except sqlite3.OperationalError:
                 pass
-            cur.execute("create table uacreg(l_uuid, l_username, l_domain, r_username, r_domain, realm, auth_username, auth_password, auth_proxy, expires)")
+            cur.execute(
+                "create table uacreg(l_uuid, l_username, l_domain, r_username, r_domain, realm, auth_username, auth_password, auth_proxy, expires)"
+            )
             db.commit()
 
-            for k,pd in self.provider.items():
-                for kk,v in cfg["self"].items():
+            for k, pd in self.provider.items():
+                for kk, v in cfg["self"].items():
                     pd.setdefault(kk, v)
                 reg = pd.pop("reg", None)
                 if reg is not None:
                     s = self.cfg["self"]
 
                     ins = dict(
-                        l_uuid="reg_"+k,
-                        l_username="user_"+k,
+                        l_uuid="reg_" + k,
+                        l_username="user_" + k,
                         l_domain=s["domain"],
-                        r_username=pd.get("name",k),
+                        r_username=pd.get("name", k),
                         r_domain=pd["domain"],
-                        realm=pd.get("realm",r_domain),
+                        realm=pd.get("realm", r_domain),
                         auth_username=pd["reg"]["user"],
                         auth_password=pd["reg"]["pass"],
-                        auth_proxy=pd.get("proxy",r_domain),
-                        expires=pd.get("expires",3600),
+                        auth_proxy=pd.get("proxy", r_domain),
+                        expires=pd.get("expires", 3600),
                     )
                     k1 = ", ".join(ins)
-                    k2 = ", ".join(":"+x for x in ins)
+                    k2 = ", ".join(":" + x for x in ins)
 
                     cur.execute(f"insert into uacreg({k1}) values({k2})", ins)
                     db.commit()
@@ -227,7 +234,7 @@ class Cfg:
     def __getitem__(self, k):
         return self.cfg[k]
 
-    def route(self, nr:str, src: Provider) -> tuple[str,Provider]:
+    def route(self, nr: str, src: Provider) -> tuple[str, Provider]:
         """Translate B number+provider from source to destination.
 
         The A number is not part of this interface; it's
@@ -237,12 +244,12 @@ class Cfg:
         if src.pre_route:
             for m in self.pre_routes:
                 if (r := match(m, nr)) is not None:
-                    dnr,dst = r
+                    dnr, dst = r
                     break
 
         if dst is False:
             if (r := src.route(nr)) is not None:
-                dnr,dst = r
+                dnr, dst = r
 
         if dst is False:
             dst = dnr = None
@@ -253,7 +260,7 @@ class Cfg:
         fdnr = None
         if dst is None:
             for m in self.routes:
-                if (r := match(m, dnr)):
+                if r := match(m, dnr):
                     fdnr, dst = r
                     break
             else:

@@ -9,15 +9,42 @@ try:
 except ImportError:
     _SHV = {}
 
+
 class Provider:
     """
     Settings for providers.
 
     Port=0: don't try to connect.
     """
+
     use_port = False
 
-    def __init__(self,name,domain,addr, country,city,prefix,default, transport="tcp", flags=0, port=None, encrypt=False, encrypt_options="", display=None, plus=True, bare=False, route=(), pre_route=True, fallback=None, emergency=("110","112"), a_in=None,b_in=None,a_out=None,b_out=None):
+    def __init__(
+        self,
+        name,
+        domain,
+        addr,
+        country,
+        city,
+        prefix,
+        default,
+        transport="tcp",
+        flags=0,
+        port=None,
+        encrypt=False,
+        encrypt_options="",
+        display=None,
+        plus=True,
+        bare=False,
+        route=(),
+        pre_route=True,
+        fallback=None,
+        emergency=("110", "112"),
+        a_in=None,
+        b_in=None,
+        a_out=None,
+        b_out=None,
+    ):
         if port is None:
             if transport == "tls":
                 port = 5061
@@ -30,7 +57,7 @@ class Provider:
         self.domain = domain
         self.transport = transport
         self.addr = addr
-        self.last_addr = addr[0] if isinstance(addr,(tuple,list)) else addr
+        self.last_addr = addr[0] if isinstance(addr, (tuple, list)) else addr
         self.flags = flags
         self.port = port
         self.encrypt = encrypt
@@ -38,10 +65,10 @@ class Provider:
         self.display = display
         self.plus = plus
         self.bare = bare
-        self.country = str(country) if isinstance(country,int) else country
-        self.city = str(city) if isinstance(city,int) else city
-        self.prefix = str(prefix) if isinstance(prefix,int) else prefix
-        self.default = str(default) if isinstance(default,int) else default
+        self.country = str(country) if isinstance(country, int) else country
+        self.city = str(city) if isinstance(city, int) else city
+        self.prefix = str(prefix) if isinstance(prefix, int) else prefix
+        self.default = str(default) if isinstance(default, int) else default
         self.pre_route = pre_route
         self.fallback = fallback
         self.emergency = emergency
@@ -54,11 +81,12 @@ class Provider:
 
     @property
     def name(self):
-        return self.domain.replace(".","_")
+        return self.domain.replace(".", "_")
 
     @property
     def port(self):
         return _SHV[f"prov__{self.name}__port"]
+
     @port.setter
     def port(self, val):
         _SHV[f"prov__{self.name}__port"] = val
@@ -66,13 +94,14 @@ class Provider:
     @property
     def last_addr(self):
         return _SHV[f"prov__{self.name}__addr"]
+
     @last_addr.setter
     def last_addr(self, val):
         _SHV[f"prov__{self.name}__addr"] = val
 
-    def route(self, nr:str) -> tuple[str,str]|None:
+    def route(self, nr: str) -> tuple[str, str] | None:
         for f in self.routes:
-            r = match(f,nr)
+            r = match(f, nr)
             if r is not None:
                 return r
         return None
@@ -99,8 +128,8 @@ class Provider:
         """
         Rewrite an incoming number to CountryCityLocalExt form.
         """
-        if isinstance(fmt,str):
-            return fmt+nr
+        if isinstance(fmt, str):
+            return fmt + nr
         if fmt is False:
             return nr
         if fmt is None:
@@ -116,7 +145,7 @@ class Provider:
             return nr
 
         # Ugh
-        return "X"+str(fmt)+"X"+nr
+        return "X" + str(fmt) + "X" + nr
 
     def _format_out(self, nr, fmt):
         """
@@ -125,15 +154,15 @@ class Provider:
         if fmt is False:
             return nr
         if fmt is None:
-            return "00"+nr
+            return "00" + nr
         if fmt is True:
-            return "+"+nr
+            return "+" + nr
 
-        if isinstance(fmt,int):
+        if isinstance(fmt, int):
             return nr[fmt:]
 
         # Ugh 2
-        return "X"+str(fmt)+"X"+nr
+        return "X" + str(fmt) + "X" + nr
 
     def __repr__(self):
         return f"Ext({self._name}: {self.transport} {self.addr})"

@@ -13,14 +13,16 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 try:
     from kamailio import var
 except ImportError:
-    var=None
+    var = None
 
 auth_token_url = "https://zoom.us/oauth/token"
+
 
 class ZoomWrapper:
     shvPrefix = "zoom_"
@@ -28,9 +30,9 @@ class ZoomWrapper:
     def __init__(self, cfg, _debug=False):
         self.cfg = cfg
 
-        self.numByNr={}
-        self.numById={}
-        self.numUnseen=set()
+        self.numByNr = {}
+        self.numById = {}
+        self.numUnseen = set()
 
         self._debug = _debug
 
@@ -42,23 +44,25 @@ class ZoomWrapper:
         else:
             del self.numByNr[onr.number]
             if var is not None:
-                del var.SHV[self.shvPrefix+onr.number]
+                del var.SHV[self.shvPrefix + onr.number]
 
-        if not nr.carrier or nr.carrier.name != 'BYOC':
+        if not nr.carrier or nr.carrier.name != "BYOC":
             return
 
-        self.numByNr[nr.number]=nr
-        self.self.numById[nr.id]=nr
+        self.numByNr[nr.number] = nr
+        self.self.numById[nr.id] = nr
         if var is not None:
-            var.SHV[self.shvPrefix+nr.number] = nr.assignee is not None
+            var.SHV[self.shvPrefix + nr.number] = nr.assignee is not None
         self.numUnseen.discard(nr.id)
 
     async def updateNumbers(self):
-        self.numUnseen=set(self.numById.keys())
+        self.numUnseen = set(self.numById.keys())
         logger.info("Start: update numbers")
         n = x = 0
         try:
-            res=await self.api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",page_size=100,next_page_token=None))
+            res = await self.api.call_listAccountPhoneNumbers(
+                parameters=dict(type="byoc", page_size=100, next_page_token=None)
+            )
             while True:
                 for r in res.phone_numbers:
                     if r.assignee is None:
@@ -67,10 +71,12 @@ class ZoomWrapper:
                     n += 1
                     self.updateNumber(r)
 
-                npt=res.next_page_token
+                npt = res.next_page_token
                 if not npt:
                     break
-                res=await self.api.call_listAccountPhoneNumbers(parameters=dict(type="byoc",next_page_token=npt,page_size=100))
+                res = await self.api.call_listAccountPhoneNumbers(
+                    parameters=dict(type="byoc", next_page_token=npt, page_size=100)
+                )
         except Exception:
             logger.exception("Update numbers")
             return
@@ -78,7 +84,7 @@ class ZoomWrapper:
         for nid in self.numUnseen:
             onr = self.numById.pop(nid)
             del self.numByNr[onr.number]
-        logger.info("Done: update numbers (%d assigned, %d free)",n,x)
+        logger.info("Done: update numbers (%d assigned, %d free)", n, x)
 
     async def refresh_numbers(self, task_status=trio.TASK_STATUS_IGNORED):
         while True:
@@ -94,22 +100,31 @@ class ZoomWrapper:
         import hmac
         import hashlib
         from pprint import pprint
+
         token = self.cfg.params["zoom"]["token"]
 
         app = QuartTrio("kazoom")
+
         @app.post("/evt")
-        async def evt(*a,**k):
-            msg = (await request.json)
+        async def evt(*a, **k):
+            msg = await request.json
             pprint(msg)
             try:
                 msg = msg["payload"]["plainToken"]
-                signature = hmac.new(bytes(token, 'utf-8'), msg = bytes(msg , 'utf-8'), digestmod = hashlib.sha256).hexdigest().lower()
+                signature = (
+                    hmac.new(
+                        bytes(token, "utf-8"), msg=bytes(msg, "utf-8"), digestmod=hashlib.sha256
+                    )
+                    .hexdigest()
+                    .lower()
+                )
                 return dict(
                     plainToken=msg,
                     encryptedToken=signature,
                 )
             except KeyError:
                 return {}
+
         await app.run_task(port=50080)
 
     async def refresh_token(self, task_status=trio.TASK_STATUS_IGNORED):
@@ -121,22 +136,25 @@ class ZoomWrapper:
         }
         while True:
             logger.info("Start: update auth")
-            response = await self.sess.post(auth_token_url,
-                auth=asks.BasicAuth((cred["client"], cred["secret"]),),
-                data=data)
+            response = await self.sess.post(
+                auth_token_url,
+                auth=asks.BasicAuth(
+                    (cred["client"], cred["secret"]),
+                ),
+                data=data,
+            )
             if response.status_code != 200:
-                raise RuntimeError("Unable to get access token",response.text)
+                raise RuntimeError("Unable to get access token", response.text)
                 # continue
             response_data = response.json()
             access_token = response_data["access_token"]
-            self.api.authenticate('Bearer', "Bearer "+access_token)
+            self.api.authenticate("Bearer", "Bearer " + access_token)
 
             logger.info("Start: auth done")
             if task_status is not None:
                 task_status.started()
                 task_status = None
-            await trio.sleep(response_data["expires_in"]*2/3)
-
+            await trio.sleep(response_data["expires_in"] * 2 / 3)
 
     __ctx = None
 
@@ -166,6 +184,7 @@ class ZoomWrapper:
             finally:
                 n.cancel_scope.cancel()
 
+
 if __name__ == "__main__":
     with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
         _s = json.load(_f)
@@ -183,5 +202,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     from kamailio._config import Cfg
+
     cfg = Cfg(sys.argv[1], sys.argv[2])
     trio.run(main2, cfg)
