@@ -50,7 +50,7 @@ class ZoomWrapper:
             return
 
         self.numByNr[nr.number] = nr
-        self.self.numById[nr.id] = nr
+        self.numById[nr.id] = nr
         if var is not None:
             var.SHV[self.shvPrefix + nr.number] = nr.assignee is not None
         self.numUnseen.discard(nr.id)
