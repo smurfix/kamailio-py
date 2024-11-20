@@ -21,8 +21,6 @@ try:
 except ImportError:
     var = None
 
-auth_token_url = "https://zoom.us/oauth/token"  # noqa:S105
-
 
 class ZoomWrapper:
     shvPrefix = "zoom_"
@@ -138,7 +136,7 @@ class ZoomWrapper:
         while True:
             logger.info("Start: update auth")
             response = await self.sess.post(
-                auth_token_url,
+                self.cfg["zoom"]["url"],
                 auth = httpx.BasicAuth(username=cred["client"], password=cred["secret"]),
                 data=data,
             )
