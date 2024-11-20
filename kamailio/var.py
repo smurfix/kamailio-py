@@ -1,7 +1,6 @@
 """
 This module exports a number of classes that allow you to access
-Kamalio data structures (or what passes for them) in a more 
-
+several Kamalio data structures in a more Pythonic way.
 """
 
 import os
@@ -65,6 +64,7 @@ class PV(_get):
         KSR.pv.unset(f"${k}")
 PV=PV()
 
+
 def key_fix(k):
     """Disambiguate and stringify a key"""
     if isinstance(k,int):
@@ -91,6 +91,7 @@ class _sub(_get):
 
     """
     what_=None
+
     def _key(self, name):
         return f"${self.what_}({name})"
 
@@ -121,6 +122,7 @@ class _sub(_get):
 
     def __delitem__(self, k):
         KSR.pv.unset(self._key(k))
+
 
 class _sub_h(_sub):
     """
@@ -279,7 +281,7 @@ class XAVP(_sub):
 XAVP=XAVP()
 
 class XAVI(type(XAVP)):
-    """Case-independent version of XAVP"""
+    """Case-insensitive version of XAVP"""
     _what = "xavi"
 XAVI=XAVI()
 
@@ -314,7 +316,6 @@ class DEF(_sub):
         if res == "":
             res = True # "ifdef"-style tests
         return res
-
 DEF=DEF()
 
 class RDIR(_sub):
@@ -358,7 +359,7 @@ XAVU1=XAVU1()
 
 class XAVU:
     """
-    XAVU hashes.
+    XAVU hashes. This accesses two-level values. Use XAVU1 for single-level.
     """
     what_ = "xavu"
 
@@ -588,29 +589,28 @@ class BDY():
         return _bdy_iter()
 BDY=BDY()
 
-class SHT(_lookup):
-    def lookup_(self, sym):
-        KSR.htable.sht_iterator_start(it, self._what_)
-        try:
-            while KSR.htable.sht_iterator_next(it):
-                yield (PV[f"$shtitkey({it})"], PV[f"$shtitval({it})"])
-        finally:
-            KSR.htable.sht_iterator_end(it)
-
-    def keys_(self):
-        for k,v in self.items_():
-            yield k
-
-    def values_(self):
-        for k,v in self.items_():
-            yield v
-
-class SHT:
-    def __getitem__(self, k):
-        return _sht(k)
-    # TODO add age_
-
-
-
-SHT=SHT()
+# TODO
+#class SHT(_lookup):
+#    def lookup_(self, sym):
+#        KSR.htable.sht_iterator_start(it, self._what_)
+#        try:
+#            while KSR.htable.sht_iterator_next(it):
+#                yield (PV[f"$shtitkey({it})"], PV[f"$shtitval({it})"])
+#        finally:
+#            KSR.htable.sht_iterator_end(it)
+#
+#    def keys_(self):
+#        for k,v in self.items_():
+#            yield k
+#
+#    def values_(self):
+#        for k,v in self.items_():
+#            yield v
+#
+#class SHT:
+#    def __getitem__(self, k):
+#        return _sht(k)
+#    # TODO add age_
+#
+#SHT=SHT()
 
