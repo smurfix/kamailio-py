@@ -2,10 +2,12 @@
 Main code for processing kamailio requests.
 """
 
+from contextlib import suppress
 import logging
 
-from ._basic import Kamailio
-import .log as log_
+from kamailio._basic import Kamailio
+import kamailio.log as log_
+from kamailio.trace import trace_enable
 
 logger = logging.getLogger("main")
 
@@ -17,10 +19,11 @@ def mod_init():
     Returns the Kamailio object.
     """
     log_.init(stderr=True)
-    trace_enable(DEF.WITH_PYTRACE)
 
     from ._config import Cfg
     cfg = Cfg()
+    with suppress(KeyError):
+        trace_enable(cfg.cfg["debug"]["trace"])
     return Kamailio(cfg, logger=logger)
 
 def child_init(*a,**k):

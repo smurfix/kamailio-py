@@ -153,7 +153,7 @@ class Cfg:
         for m in cfg.get('route',()):
             self.routes.append(m)
 
-        self.prov = cfg.setdefault("provider",{})
+        self.provider = cfg.setdefault("provider",{})
 
         # change route destinations to point to providers directly
         def pfix(rt):
@@ -165,7 +165,7 @@ class Cfg:
             rt['match'] = re.compile(rt['match'])
             if (fn := rt.get('dest', None)) is not None:
                 try:
-                    rt['dest'] = self.prov[fn]
+                    rt['dest'] = self.provider[fn]
                 except KeyError:
                     raise UnknownProvider(rt['match'].pattern, fn)
 
@@ -184,7 +184,7 @@ class Cfg:
             cur.execute("create table uacreg(l_uuid, l_username, l_domain, r_username, r_domain, realm, auth_username, auth_password, auth_proxy, expires)")
             db.commit()
 
-            for k,pd in self.prov.items():
+            for k,pd in self.provider.items():
                 for kk,v in cfg["self"].items():
                     pd.setdefault(kk, v)
                 reg = pd.pop("reg", None)
@@ -209,17 +209,17 @@ class Cfg:
                     cur.execute(f"insert into uacreg({k1}) values({k2})", ins)
                     db.commit()
 
-                self.prov[k] = Provider(name=k, **pd)
+                self.provider[k] = Provider(name=k, **pd)
 
             for rt in self.pre_routes:
                 pfix(rt)
             for rt in self.routes:
                 pfix(rt)
-            for pd in self.prov.values():
+            for pd in self.provider.values():
                 for rt in pd.routes:
                     pfix(rt)
                 if pd.fallback is not None:
-                    pd.fallback = self.prov[pd.fallback]
+                    pd.fallback = self.provider[pd.fallback]
 
         finally:
             db.close()

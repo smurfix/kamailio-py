@@ -15,8 +15,8 @@ def test_basic():
         s,d = sd.split(" ")
         sa,sb,sp = s.split(":")
         da,db,dp = d.split(":")
-        sp = c.prov[sp]
-        dp = None if dp == "-" else c.prov[dp]
+        sp = c.provider[sp]
+        dp = None if dp == "-" else c.provider[dp]
 
         ia = sp.format_a_in(sa)
         r = c.route(sb,sp)

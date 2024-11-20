@@ -18,10 +18,13 @@ import json
 import logging
 import re
 import time
+import logging
 
 import KSR
 
 from urllib.parse import urlparse
+
+logger=logging.getLogger("kamailio.basic")
 
 exit = sys.exit  # *sigh*
 
