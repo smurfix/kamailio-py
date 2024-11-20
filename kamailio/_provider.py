@@ -17,7 +17,7 @@ class Provider:
     """
     use_port = False
 
-    def __init__(self,name,domain,addr, country,city,transport="tcp", flags=0, port=None, encrypt=False, encrypt_options="", display=None, plus=True, bare=False, route=(), pre_route=True, fallback=None, emergency=("110","112"), default="", a_in=None,b_in=None,a_out=None,b_out=None):
+    def __init__(self,name,domain,addr, country,city,prefix,default, transport="tcp", flags=0, port=None, encrypt=False, encrypt_options="", display=None, plus=True, bare=False, route=(), pre_route=True, fallback=None, emergency=("110","112"), a_in=None,b_in=None,a_out=None,b_out=None):
         if port is None:
             if transport == "tls":
                 port = 5061
@@ -40,6 +40,8 @@ class Provider:
         self.bare = bare
         self.country = str(country) if isinstance(country,int) else country
         self.city = str(city) if isinstance(city,int) else city
+        self.prefix = str(prefix) if isinstance(prefix,int) else prefix
+        self.default = str(default) if isinstance(default,int) else default
         self.pre_route = pre_route
         self.fallback = fallback
         self.emergency = emergency

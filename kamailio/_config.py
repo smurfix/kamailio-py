@@ -3,14 +3,28 @@ Config file analysis
 
 The configuration is a YAML file::
 
-    # generic anon number replacement
-    default: "4991193520"
+    db: "/var/lib/kamailio/db.db"
+    # special handling
     emergency:
     - "110"
     - "112"
     - "19222"
-    country: "49"
-    city: "911"
+    self:
+      domain: example.net
+      country: "49"
+      city: "69"
+      prefix: "90009"
+      default: "49911900090"
+
+
+    setup:
+    - kamailio.zoom.init
+    zoom:
+      prefix: zoom_
+      api:
+        key: myzoomapikeyfoobar
+        secret: !secret zoom_client
+      token: !secret zoom_token
 
     # pre-route is used for emergency numbers and similar.
     # If a source provider requires special handling, use its route instead
@@ -20,7 +34,7 @@ The configuration is a YAML file::
       dest: "versa"
 
     route:
-    - match: "49911(9352[0-2]*)"
+    - match: "4969(90009[0-2]*)"
       result: $1
       dest: "pbx"
 
@@ -32,6 +46,7 @@ The configuration is a YAML file::
         # overrides the global table
         emergency:
         - "911"
+
         # 
         domain: sip1.voip-1und1.net
         transport: tcp
@@ -40,6 +55,9 @@ The configuration is a YAML file::
         flags: 0
         encrypt: false
         # encrypt_options: ""  # "SDES-no-AEAD_AES_256_GCM SDES-no-AEAD_AES_128_GCM …"
+        reg:
+          user: v_user
+          pass: !secret v_pass
 
         # null: 0049911…, true: +49911…, false: 49911…
         # also in: string: prefix
@@ -48,9 +66,6 @@ The configuration is a YAML file::
         b_in: null
         a_out: null
         b_out: null
-
-        country: "49"
-        city: "911"
 
         # use the pre-route filter?
         pre_route: true
@@ -88,42 +103,112 @@ Internally phone numbers always are in 49911… format.
 
 import re
 import yaml
+import sqlite3
 from ._provider import Provider
 from ._util import match
 
-k_global = ("city","country","emergency","default")
+k_global = ("emergency","self","setup")
+
+class SecretLoader(yaml.SafeLoader):
+    def __init__(self, secret, stream):
+        self.secret = secret
+        super().__init__(stream)
+
+def load_secret(loader, node):
+    return loader.secret[node.value]
+
+SecretLoader.add_constructor("!secret", load_secret)
+
+
+class UnknownProvider(ValueError):
+    def __str__(self):
+        return f"{self.args[0] !r} for {self.args[1] !r}"
 
 class Cfg:
-    def __init__(self, cfg = "/etc/kamailio/config.yaml"):
+    def __init__(self, cfg = "/etc/kamailio/config.yaml", secret = "/etc/kamailio/secrets.yaml", test_load=False):
+
+        with open(secret,"r") as f:
+            sec = yaml.SafeLoader(f).get_single_data()
+
         with open(cfg,"r") as f:
-            cfg = yaml.safe_load(f)
-            for k in k_global:
+            cfg = SecretLoader(sec, f).get_single_data()
+
+        self.cfg = cfg
+
+        if test_load:
+            return
+
+        for k in k_global:
+            try:
                 setattr(self, k, cfg[k])
-            self.pre_routes = []
-            self.routes = []
+            except KeyError:
+                if not in_test:
+                    raise
+        self.pre_routes = []
+        self.routes = []
 
-            for m in cfg.get('pre-route',()):
-                self.pre_routes.append(m)
+        for m in cfg.get('pre-route',()):
+            self.pre_routes.append(m)
 
-            for m in cfg.get('route',()):
-                self.routes.append(m)
+        for m in cfg.get('route',()):
+            self.routes.append(m)
 
-            self.prov = cfg.setdefault("provider",{})
+        self.prov = cfg.setdefault("provider",{})
 
-            # change route destinations to point to providers directly
-            def pfix(rt):
-                m = rt['match']
-                if isinstance(m,int):
-                    raise ValueError("Match {m} must be a string")
-                if 'result' in rt and isinstance(rt['result'],int):
-                    raise ValueError(f"Result {rt['result']} must be a string")
-                rt['match'] = re.compile(rt['match'])
-                if (fn := rt.get('dest', None)) is not None:
+        # change route destinations to point to providers directly
+        def pfix(rt):
+            m = rt['match']
+            if isinstance(m,int):
+                raise ValueError("Match {m} must be a string")
+            if 'result' in rt and isinstance(rt['result'],int):
+                raise ValueError(f"Result {rt['result']} must be a string")
+            rt['match'] = re.compile(rt['match'])
+            if (fn := rt.get('dest', None)) is not None:
+                try:
                     rt['dest'] = self.prov[fn]
+                except KeyError:
+                    raise UnknownProvider(rt['match'].pattern, fn)
+
+        try:
+            dbp = cfg["database"]["path"]
+        except KeyError:
+            dbp = "/run/kamailio/db.sqlite"
+
+        db = sqlite3.connect(dbp)
+        try:
+            cur = db.cursor()
+            try:
+                cur.execute("drop table uacreg")
+            except sqlite3.OperationalError:
+                pass
+            cur.execute("create table uacreg(l_uuid, l_username, l_domain, r_username, r_domain, realm, auth_username, auth_password, auth_proxy, expires)")
+            db.commit()
 
             for k,pd in self.prov.items():
-                for kg in k_global:
-                    pd.setdefault(kg, getattr(self, kg))
+                for kk,v in cfg["self"].items():
+                    pd.setdefault(kk, v)
+                reg = pd.pop("reg", None)
+                if reg is not None:
+                    s = self.cfg["self"]
+
+                    ins = dict(
+                        l_uuid="reg_"+k,
+                        l_username="user_"+k,
+                        l_domain=s["domain"],
+                        r_username=pd.get("name",k),
+                        r_domain=pd["domain"],
+                        realm=pd.get("realm",r_domain),
+                        auth_username=pd["reg"]["user"],
+                        auth_password=pd["reg"]["pass"],
+                        auth_proxy=pd.get("proxy",r_domain),
+                        expires=pd.get("expires",3600),
+                    )
+                    k1 = ", ".join(ins)
+                    k2 = ", ".join(":"+x for x in ins)
+
+                    cur.execute(f"insert into uacreg({k1}) values({k2})", ins)
+                    db.commit()
+
                 self.prov[k] = Provider(name=k, **pd)
 
             for rt in self.pre_routes:
@@ -136,6 +221,11 @@ class Cfg:
                 if pd.fallback is not None:
                     pd.fallback = self.prov[pd.fallback]
 
+        finally:
+            db.close()
+
+    def __getitem__(self, k):
+        return self.cfg[k]
 
     def route(self, nr:str, src: Provider) -> tuple[str,Provider]:
         """Translate B number+provider from source to destination.

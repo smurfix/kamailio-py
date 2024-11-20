@@ -58,8 +58,11 @@ def user_from_url(url):
         u = u[:at]
     return u
 
-# -- {start defining kamailio class}
+
 class Kamailio:
+    """
+    Main Kamailio SIP message handler.
+    """
     def __init__(self, cfg, logger=None):
         self.cfg = cfg
         if logger is None:
@@ -77,15 +80,22 @@ class Kamailio:
 
     # executed when kamailio child processes are initialized
     def child_init(self, rank):
+        logger.debug("Child Init %s", rank)
         thread_state.setup(rank)
         return 0
 
-    def background(self, txt, ttt):
-        i=0
-        while True:
-            print("BG",i,txt)
-            time.sleep(10)
-            i += 1
+    async def main(self):
+        "background process"
+        async with trio.open_nursery() as n:
+            for task in self.cfg.setup:
+                m,a = task.rsplit(".",1)
+                m = import_module(m)
+                a = getattr(m,a)
+                n.start_soon(a,self)
+
+    def background(self, *x):
+        logger.debug("Background Start %r", x)
+        trio.run(self.main)
 
     # SIP request routing. Cannot be renamed
     @trace
@@ -619,17 +629,4 @@ class Kamailio:
         self.log.info("")
         self.log.info("===== Event %r", msg)
         return 1
-
-# global function to instantiate a kamailio class object
-# -- executed when kamailio app_python module is initialized
-def mod_init(Base=Kamailio):
-    log_.init(stderr=True)
-    global log
-    logger = logging.getLogger("main")
-    log = logger.info
-    trace_enable(DEF.WITH_PYTRACE)
-
-    from ._config import Cfg
-    cfg = Cfg("/etc/kamailio/config.yaml")
-    return Base(cfg, logger=logger)
 
