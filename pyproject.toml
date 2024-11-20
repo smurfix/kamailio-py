@@ -12,6 +12,11 @@ classifiers = [
 	"Development Status :: 4 - Beta",
 	]
 dependencies = [
+	"httpx",
+	"aiopenapi3",
+	"trio",
+	"ursine",
+	"yaml",
 	]
 dynamic = [ "version",]
 keywords = [ "kamailio", "sip" ]
