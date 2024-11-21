@@ -86,7 +86,7 @@ class ZoomWrapper:
 
     async def refresh_numbers(self, task_status=trio.TASK_STATUS_IGNORED):
         while True:
-            await self.updateNumbers(self.api)
+            await self.updateNumbers()
             if task_status is not None:
                 task_status.started()
                 task_status = None
