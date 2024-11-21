@@ -16,7 +16,6 @@ dependencies = [
 	"aiopenapi3",
 	"trio",
 	"ursine",
-	"yaml",
 	]
 dynamic = [ "version",]
 keywords = [ "kamailio", "sip" ]
