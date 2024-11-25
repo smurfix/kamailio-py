@@ -99,7 +99,7 @@ class ZoomWrapper:
         from quart import request
         from quart_trio import QuartTrio
 
-        token = self.cfg.params["zoom"]["token"]
+        token = self.cfg["zoom"]["cred"]["token"]
 
         app = QuartTrio("kazoom")
 
