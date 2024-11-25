@@ -77,8 +77,10 @@ class Kamailio:
             if isinstance(v.addr, (list, tuple)):
                 for vv in v.addr:
                     self.SRC[vv] = k
+                    logger.info("SRC %s %s", vv,k)
             else:
                 self.SRC[v.addr] = k
+                logger.info("SRC %s %s", v.addr,k)
 
     # executed when kamailio child processes are initialized
     def child_init(self, rank):
@@ -111,7 +113,7 @@ class Kamailio:
             )
 
         KSR.sipjson.sj_serialize("0B", "$var(debug_json)")
-        self.log.debug("Data:\n%s", pformat(json.loads(VAR.debug_json)))
+        self.log.debug("Data In:\n%s", pformat(json.loads(VAR.debug_json)))
 
         # per request initial checks
         self.route_reqinit(msg)
@@ -206,7 +208,7 @@ class Kamailio:
         srcnr = PV.fU
         dstnr = PV.rU
 
-        self.log.info("Data:\n%s", pformat(json.loads(VAR.debug_json)))
+        self.log.info("AdrFix:\n%s", pformat(json.loads(VAR.debug_json)))
 
         snr = src.format_a_in(srcnr)
         dst = self.cfg.route(dstnr, src)
@@ -336,10 +338,12 @@ class Kamailio:
         if KSR.corex.has_user_agent() > 0:
             ua = PV.ua
             if any(agent in ua for agent in BAD_AGENTS):
+                self.log.debug("Bad UA %r",ua)
                 KSR.sl.sl_send_reply(200, "Processed")
                 exit()
 
         if KSR.maxfwd.process_maxfwd(10) < 0:
+            self.log.debug("reject ManyHops")
             KSR.sl.sl_send_reply(483, "Too Many Hops")
             exit()
 
@@ -350,7 +354,7 @@ class Kamailio:
             try:
                 src = self.cfg.provider[self.SRC[src]]
             except KeyError:
-                self.log.warning(f"{src}: not found")
+                self.log.warning(f"{src}: not found {self.SRC[src]}")
             else:
                 if src.use_port:
                     src.port = PV.sp
@@ -359,12 +363,15 @@ class Kamailio:
             #               else:
             #                   self.log.info(f"{src.domain}: Use port is off")
 
+            self.log.debug("REPLY 200 Keepalive")
             KSR.sl.sl_send_reply(200, "Keepalive")
             exit()
 
         if KSR.sanity.sanity_check(1511, 7) < 0:
             self.log.error(f"Malformed SIP message from {PV.si}:{PV.sp}")
             exit()
+
+        self.log.debug("continue")
 
     def route_withindlg(self, msg):
         """
