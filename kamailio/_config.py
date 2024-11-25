@@ -214,8 +214,8 @@ class Cfg:
                         r_username=pd.get("name", k),
                         r_domain=pd["domain"],
                         realm=pd.get("realm", pd["domain"]),
-                        auth_username=pd["reg"]["user"],
-                        auth_password=pd["reg"]["pass"],
+                        auth_username=pd.get("reg",{}).get("user",None),
+                        auth_password=pd.get("reg",{}).get("pass",None),
                         auth_proxy=pd.get("proxy", pd["domain"]),
                         expires=pd.get("expires", 3600),
                     )
