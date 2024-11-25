@@ -12,7 +12,7 @@ from pprint import pprint
 
 import httpx
 import trio
-from aiopenapi3 import OpenAPI
+from asyncopenapi3 import OpenAPI
 
 logger = logging.getLogger(__name__)
 
