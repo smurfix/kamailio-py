@@ -187,7 +187,7 @@ class Kamailio:
             return
 
         srcnr = PV.fU
-        snr = src.format_a_in(srcnr)
+        snr = self.cfg.provider[src].format_a_in(srcnr)
 
         if HDRC.Contact > 0:
             h = Header(HDR.Contact)
@@ -207,6 +207,7 @@ class Kamailio:
 
         srcnr = PV.fU
         dstnr = PV.rU
+        src = self.cfg.provider[src]
 
         self.log.info("AdrFix:\n%s", pformat(json.loads(VAR.debug_json)))
 
