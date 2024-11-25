@@ -248,6 +248,21 @@ class Cfg:
 
         The A number is not part of this interface; it's
         subsequently formatted per the discovered provider.
+
+        Routing algorithm (B number):
+        * Apply the pre-route table.
+          If the source doesn't have a pre-route, use the global table.
+        * Apply the source's route table if it exists.
+        * If no match:
+          * Canonicalize the number per the source's rules.
+          * Apply the global route table if the source table didn't match.
+        * If source and destination are the same and the source has a
+          fallback, use that instead.
+        * Rewrite the number for the destination.
+        * Apply source and destination rewrite rules to the A number.
+
+        As an important exception to the above, emergency destinations are
+        never rewritten.
         """
         dst = False
         if src.pre_route:
