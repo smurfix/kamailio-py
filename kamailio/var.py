@@ -342,6 +342,13 @@ class VAR(_sub):
 VAR = VAR()
 
 
+class UAC_REQ(_sub):
+    what_ = "uac_req"
+
+
+UAC_REQ = UAC_REQ()
+
+
 class SHV(_sub):
     what_ = "shv"
 
