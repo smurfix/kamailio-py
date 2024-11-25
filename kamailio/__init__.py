@@ -1,6 +1,7 @@
 # everybody needs these
 from __future__ import annotations
 
+import sys
 import threading
 import logging
 import logging.config
@@ -26,12 +27,17 @@ LOGGING = {
         'syslog': {
             'class': 'logging.handlers.SysLogHandler',
             'address': '/dev/log',
-            'facility': "local0",
             'formatter': 'verbose',
+            },
+        'stderr': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stderr,
+            'formatter': 'verbose',
+            'level': logging.DEBUG,
             },
         },
     'root': {
-        'handlers': ['syslog'],
+        'handlers': ['syslog'], #'stderr'],
         'level': logging.DEBUG,
         'propagate': True,
         },
