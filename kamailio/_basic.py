@@ -112,9 +112,6 @@ class Kamailio:
                 "===== request [%s] to [%s] from [%s] (%s)\n%s", PV.rm, PV.ru, PV.fu, PV.si, PV.mb
             )
 
-        KSR.sipjson.sj_serialize("0B", "$var(debug_json)")
-        self.log.debug("Data In:\n%s", pformat(json.loads(VAR.debug_json)))
-
         # per request initial checks
         self.route_reqinit(msg)
 
@@ -287,9 +284,6 @@ class Kamailio:
         if PV.fn == "anonymous" and src.display is not None:
             PV.fn = src.display
 
-        KSR.sipjson.sj_serialize("0B", "$var(debug_json)")
-        self.log.info("Result:\n%s", pformat(json.loads(VAR.debug_json)))
-
         PV.td = dst.domain
         return 1
 
@@ -364,7 +358,7 @@ class Kamailio:
             #               else:
             #                   self.log.info(f"{src.domain}: Use port is off")
 
-            self.log.debug("REPLY 200 Keepalive")
+            # self.log.debug("REPLY 200 Keepalive")
             KSR.sl.sl_send_reply(200, "Keepalive")
             exit()
 
