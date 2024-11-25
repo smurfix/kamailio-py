@@ -30,6 +30,7 @@ class Provider:
         city,
         prefix,
         default,
+        realm=None,
         transport="tcp",
         flags=0,
         port=None,
@@ -51,9 +52,12 @@ class Provider:
             port = 5061 if transport == "tls" else 5060
         elif port == 0:
             self.use_port = True
+        if realm is None:
+            realm = domain
 
         self._name = name
         self.domain = domain
+        self.realm = realm
         self.transport = transport
         self.addr = addr
         self.last_addr = addr[0] if isinstance(addr, (tuple, list)) else addr
