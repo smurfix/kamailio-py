@@ -172,7 +172,7 @@ class Cfg:
         def pfix(rt):
             m = rt["match"]
             if isinstance(m, int):
-                raise ValueError("Match {m} must be a string")  # noqa:TRY004
+                raise ValueError(f"Match {rt !r} must be a string")  # noqa:TRY004
             if "result" in rt and isinstance(rt["result"], int):
                 raise ValueError(f"Result {rt['result']} must be a string")
             rt["match"] = re.compile(rt["match"])

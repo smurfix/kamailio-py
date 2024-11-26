@@ -395,8 +395,6 @@ class Kamailio:
             self.log.error(f"Malformed SIP message from {PV.si}:{PV.sp}")
             exit()
 
-        self.log.debug("continue")
-
     def route_withindlg(self, msg):
         """
         Handle requests within SIP dialogs
