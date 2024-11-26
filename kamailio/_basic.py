@@ -84,7 +84,7 @@ class Kamailio:
 
     # executed when kamailio child processes are initialized
     def child_init(self, rank):
-        logger.debug("Child Init %s", rank)
+        # logger.debug("Child Init %s", rank)
         thread_state.setup(rank)
         return 0
 
