@@ -189,16 +189,7 @@ class Cfg:
         db = sqlite3.connect(dbp)
         try:
             cur = db.cursor()
-            with suppress(sqlite3.OperationalError):
-                cur.execute("drop table uacreg")
-            cur.execute("""
-                create table uacreg(
-                    l_uuid, l_username, l_domain,
-                    r_username, r_domain,
-                    realm, auth_username, auth_password, auth_proxy,
-                    expires)
-                """)
-            db.commit()
+            cur.execute("delete from uacreg")
 
             for k, pd in self.provider.items():
                 for kk, v in cfg["self"].items():
@@ -211,19 +202,19 @@ class Cfg:
                         l_uuid="reg_" + k,
                         l_username="user_" + k,
                         l_domain=s["domain"],
-                        r_username=pd.get("name", k),
+                        r_username=reg.get("name", k),
                         r_domain=pd["domain"],
                         realm=pd.get("realm", pd["domain"]),
                         auth_username=reg.get("user",None),
                         auth_password=reg.get("pass",None),
                         auth_proxy=pd.get("proxy", pd["domain"]),
                         expires=pd.get("expires", 3600),
+                        socket=pd.get("socket",None),
                     )
                     k1 = ", ".join(ins)
                     k2 = ", ".join(":" + x for x in ins)
 
                     cur.execute(f"insert into uacreg({k1}) values({k2})", ins)
-                    db.commit()
 
                 self.provider[k] = Provider(name=k, **pd)
 
@@ -236,6 +227,7 @@ class Cfg:
                     pfix(rt)
                 if pd.fallback is not None:
                     pd.fallback = self.provider[pd.fallback]
+            db.commit()
 
         finally:
             db.close()
