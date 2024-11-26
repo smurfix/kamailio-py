@@ -106,13 +106,14 @@ from __future__ import annotations
 import re
 import sqlite3
 from contextlib import suppress
+from importlib import import_module
 
 import yaml
 
 from ._provider import Provider
 from ._util import match
 
-k_global = ("emergency", "self", "setup")
+k_global = ("emergency", "self", "setup", "app_server")
 
 
 class SecretLoader(yaml.SafeLoader):

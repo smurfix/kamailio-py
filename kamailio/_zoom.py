@@ -6,13 +6,17 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import math
 from contextlib import asynccontextmanager
 from pathlib import Path
 from pprint import pprint
 
+from quart import request
 import httpx
 import trio
 from asyncopenapi3 import OpenAPI
+
+from ._provider import Provider as _Provider
 
 logger = logging.getLogger(__name__)
 
@@ -90,41 +94,10 @@ class ZoomWrapper:
             if task_status is not None:
                 task_status.started()
                 task_status = None
-            await trio.sleep(1200)
+            if self._update < 0:
+                return
+            await trio.sleep(self._update)
 
-    async def app_server(self, task_status=trio.TASK_STATUS_IGNORED):
-        import hashlib
-        import hmac
-
-        from quart import request
-        from quart_trio import QuartTrio
-
-        token = self.cfg["zoom"]["cred"]["token"]
-
-        app = QuartTrio("kazoom")
-
-        @app.post("/evt")
-        async def evt(*a, **k):
-            a, k  # noqa:B018
-            msg = await request.json
-            pprint(msg)
-            try:
-                msg = msg["payload"]["plainToken"]
-                signature = (
-                    hmac.new(
-                        bytes(token, "utf-8"), msg=bytes(msg, "utf-8"), digestmod=hashlib.sha256
-                    )
-                    .hexdigest()
-                    .lower()
-                )
-                return dict(
-                    plainToken=msg,
-                    encryptedToken=signature,
-                )
-            except KeyError:
-                return {}
-
-        await app.run_task(port=50080, task_status=task_status)
 
     async def refresh_token(self, task_status=trio.TASK_STATUS_IGNORED):
         cred = self.cfg["zoom"]["cred"]
@@ -153,52 +126,49 @@ class ZoomWrapper:
                 task_status = None
             await trio.sleep(response_data["expires_in"] * 2 / 3)
 
-    __ctx = None
 
-    async def __aenter__(self):
-        self.__ctx = ctx = self._ctx()  # pylint: disable=E1101,W0201
-        return await ctx.__aenter__()
-
-    def __aexit__(self, *tb):
+    async def _evt(self, *a, **k):
+        a, k  # noqa:B018
+        msg = await request.json
+        pprint(msg)
         try:
-            return self.__ctx.__aexit__(*tb)
-        finally:
-            self.__ctx = None
+            msg = msg["payload"]["plainToken"]
+            signature = (
+                hmac.new(
+                    bytes(token, "utf-8"), msg=bytes(msg, "utf-8"), digestmod=hashlib.sha256
+                )
+                .hexdigest()
+                .lower()
+            )
+            return dict(
+                plainToken=msg,
+                encryptedToken=signature,
+            )
+        except KeyError:
+            return {}
 
-    @asynccontextmanager
-    async def _ctx(self):
+    async def match_known(self, nr):
+        try:
+            return var.SHV[self._shvPrefix + nr]
+        except KeyError:
+            return False
+
+    async def run(self, kam):
+        if var is not None:
+            for nr in self._known:
+                var.SHV[self._shvPrefix + nr] = True
         with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
             _s = json.load(_f)
-
-        async with OpenAPI(_s) as self.api, trio.open_nursery() as n:
+        async with (
+                OpenAPI(_s) as self.api,
+                trio.open_nursery() as n,
+                ):
             self.sess = httpx.AsyncClient(limits=httpx.Limits(max_connections=3))
-            if not self._debug:
-                await n.start(self.refresh_token)
+            await n.start(self.refresh_token)
+            if self._update:
                 await n.start(self.refresh_numbers)
-                await n.start(self.app_server)
-            try:
-                yield self
-            finally:
-                n.cancel_scope.cancel()
+            logger.debug("Zoom subsystem is up.")
+            if kam.app is not None:
+                kam.app.add_url_rule("/zoom/evt", methods=["POST"], view_func=self._evt)
 
-
-if __name__ == "__main__":
-    with (Path(__file__).parent / "_data" / "zoom" / "phone.json").open("r") as _f:
-        _s = json.load(_f)
-
-    async def main(cfg):
-        async with ZoomWrapper(cfg, _debug=True) as z, trio.open_nursery() as n:
-            await n.start(z.app_server)
-
-    async def main2(cfg):
-        async with ZoomWrapper(cfg, _debug=True) as z, trio.open_nursery() as n:
-            await n.start(z.refresh_token)
-            await z.updateNumbers()
-            n.cancel_scope.cancel()
-
-    logging.basicConfig(level=logging.DEBUG)
-
-    from kamailio._config import Cfg
-
-    cfg = Cfg(sys.argv[1], sys.argv[2])
-    trio.run(main2, cfg)
+            await trio.sleep(math.inf)

@@ -3,6 +3,7 @@ Class to hold provider data
 """
 
 from __future__ import annotations
+import logging
 
 from ._util import match
 
@@ -81,6 +82,13 @@ class Provider:
         self.b_in = b_in
         self.a_out = a_out
         self.b_out = b_out
+
+        self.logger = logging.getLogger(f"kamailio.prov.{self.name}")
+
+        for k in kw.keys():
+            if k in {"socket","proxy"}:
+                continue
+            self.logger.warning("Config %r: unknown", k)
 
     @property
     def name(self):
@@ -169,3 +177,6 @@ class Provider:
 
     def __repr__(self):
         return f"Ext({self._name}: {self.transport} {self.addr})"
+
+    async def run(self, kam):
+        pass

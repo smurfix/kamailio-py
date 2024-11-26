@@ -20,6 +20,9 @@ from kamailio.trace import trace
 
 import KSR
 import trio
+# from quart_trio import QuartTrio
+from ._util import QuartTrio
+from quart import request
 from ursine.header import Header
 
 logger = logging.getLogger("kamailio.basic")
@@ -65,6 +68,7 @@ class Kamailio:
     """
     Main Kamailio SIP message handler.
     """
+    app = None
 
     def __init__(self, cfg, logger=None):
         self.cfg = cfg
@@ -88,8 +92,18 @@ class Kamailio:
         thread_state.setup(rank)
         return 0
 
+    def make_app_server(self):
+        self.app = QuartTrio("kazoom")
+
+    async def run_app_server(self, task_status=trio.TASK_STATUS_IGNORED):
+        await self.app.run_task(task_status=task_status, **self.cfg.app_server)
+
+
     async def main(self):
-        "background process"
+        "background processes"
+        app_cfg = self.cfg.app_server
+        if app_cfg:
+            self.make_app_server()
         async with trio.open_nursery() as n:
             for task in self.cfg.setup:
                 logger.debug("Run: %s", task)
@@ -97,6 +111,10 @@ class Kamailio:
                 m = import_module(m)
                 a = getattr(m, a)
                 n.start_soon(a, self)
+            for prov in self.cfg.provider.values():
+                n.start_soon(prov.run, self)
+            if app_cfg:
+                n.start_soon(self.run_app_server)
             logger.debug("Startup done.")
 
     def background(self, *x):
