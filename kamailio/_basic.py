@@ -107,10 +107,9 @@ class Kamailio:
     @trace
     def ksr_request_route(self, msg):
         if PV.rm != "OPTIONS":
-            self.log.info("")
-            self.log.info(
-                "===== request [%s] to [%s] from [%s] (%s)\n%s", PV.rm, PV.ru, PV.fu, PV.si, PV.mb
-            )
+            # self.log.info("")
+            # self.log.info("===== request [%s] to [%s] from [%s] (%s)\n%s", PV.rm, PV.ru, PV.fu, PV.si, PV.mb)
+            self.log.info("= Request [%s] to [%s] from [%s] (%s)", PV.rm, PV.ru, PV.fu, PV.si)
 
         # per request initial checks
         self.route_reqinit(msg)
@@ -206,7 +205,7 @@ class Kamailio:
         dstnr = PV.rU
         src = self.cfg.provider[src]
 
-        self.log.info("AdrFix:\n%s", pformat(json.loads(VAR.debug_json)))
+        # ??? self.log.info("AdrFix:\n%s", pformat(json.loads(VAR.debug_json)))
 
         snr = src.format_a_in(srcnr)
         dst = self.cfg.route(dstnr, src)
@@ -581,8 +580,8 @@ class Kamailio:
         """
         # -- equivalent of branch_route[...]{}
 
-        self.log.debug("")
-        self.log.debug(f"===== new branch [{PV.T_branch_idx}] to {PV.ru}")
+        # self.log.debug("")
+        self.log.debug(f"= Branch [{PV.T_branch_idx}] to {PV.ru}")
 
         #       src = msg.src_address[0]
         #       try:
@@ -608,8 +607,8 @@ class Kamailio:
         # -- equivalent of onreply_route[...]{}
 
         scode = PV.rs
-        self.log.debug("")
-        self.log.debug("===== reply: %s", scode)
+        # self.log.debug("")
+        self.log.debug("= Reply: %s", scode)
         if scode > 100 and scode < 299:
             self.route_natmanage(msg)
 
@@ -622,8 +621,8 @@ class Kamailio:
         """
         # -- equivalent of failure_route[...]{}
 
-        self.log.debug("")
-        self.log.debug("===== Failure: %s", PV.rs)
+        # self.log.debug("")
+        self.log.debug("= Failure: %s", PV.rs)
         self.route_natmanage(msg)
 
         if KSR.tm.t_is_canceled() > 0:
@@ -636,8 +635,9 @@ class Kamailio:
         """
         SIP response handling
         """
-        self.log.info("")
-        self.log.info("===== reply %s (%s)\n%s\n%s", PV.rs, PV.si, msg, PV.mb)
+        # self.log.info("")
+        # self.log.info("===== reply %s (%s)\n%s\n%s", PV.rs, PV.si, msg, PV.mb)
+        self.log.info("= Reply %s (%s)", PV.rs, PV.si)
         return 1
 
     @trace
@@ -645,16 +645,17 @@ class Kamailio:
         """
         SIP send-on handling
         """
-        self.log.info("")
-        self.log.info("===== send_on to %s:%d\n%s\n%s", SNDTO.ip, SNDTO.port, msg, SNDTO.buf)
+        # self.log.info("")
+        # self.log.info("===== send_on to %s:%d\n%s\n%s", SNDTO.ip, SNDTO.port, msg, SNDTO.buf)
+        self.log.info("= send_on to %s:%d", SNDTO.ip, SNDTO.port)
         return 1
 
     def tls_event(self, msg):
-        self.log.info("")
-        self.log.info("===== TLS %r", msg)
+        # self.log.info("")
+        self.log.info("= TLS %r", msg)
         return 1
 
     def event_route(self, *msg):
-        self.log.info("")
-        self.log.info("===== Event %r", msg)
+        # self.log.info("")
+        self.log.info("= Event %r", msg)
         return 1
