@@ -277,7 +277,11 @@ class Cfg:
         fdnr = None
         if dst is None:
             for m in self.routes:
-                if r := match(m, dnr):
+                if "use" in m:
+                    dst = m["dest"]
+                    if fdnr := getattr(dst, f"route_{m['use']}")(dnr):
+                        break
+                elif r := match(m, dnr):
                     fdnr, dst = r
                     break
             else:
