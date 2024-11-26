@@ -39,7 +39,10 @@ XAVU1 = var.XAVU1
 HDR = var.HDR
 HDRC = var.HDRC
 NHDR = var.NHDR
+SNDFROM = var.SNDFROM
 SNDTO = var.SNDTO
+DLG = var.DLG
+DLG_CTX = var.DLG_CTX
 
 # global variables corresponding to defined values (e.g., flags) in kamailio.cfg
 FLT_ACC = 1
@@ -124,6 +127,11 @@ class Kamailio:
     # SIP request routing. Cannot be renamed
     @trace
     def ksr_request_route(self, msg):
+        if KSR.is_method_in("I") and not KSR.siputils.has_totag():
+            DLG_CTX.timeout_route = "DLGTIMEOUT"
+            DLG_CTX.timeout_bye = 1
+        KSR.dialog.dlg_manage()
+
         if PV.rm != "OPTIONS":
             # self.log.info("")
             # self.log.info("===== request [%s] to [%s] from [%s] (%s)\n%s", PV.rm, PV.ru, PV.fu, PV.si, PV.mb)
