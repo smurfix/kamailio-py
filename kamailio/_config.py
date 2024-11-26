@@ -203,7 +203,7 @@ class Cfg:
                         l_uuid="reg_" + k,
                         l_username="user_" + k,
                         l_domain=s["domain"],
-                        r_username=reg.get("name", k),
+                        r_username=pd.get("user", reg.get("user", k)),
                         r_domain=pd["domain"],
                         realm=pd.get("realm", pd["domain"]),
                         auth_username=reg.get("user",None),
@@ -217,7 +217,15 @@ class Cfg:
 
                     cur.execute(f"insert into uacreg({k1}) values({k2})", ins)
 
-                self.provider[k] = Provider(name=k, **pd)
+                try:
+                    pn = pd.pop('type')
+                except KeyError:
+                    PT = Provider
+                else:
+                    if "." not in pn:
+                        pn = f"kamailio.{pn}"
+                    PT = import_module(pn).Provider
+                self.provider[k] = PT(name=k, **pd)
 
             for rt in self.pre_routes:
                 pfix(rt)

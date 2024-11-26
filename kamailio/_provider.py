@@ -12,7 +12,6 @@ try:
 except ImportError:
     _SHV = {}
 
-
 class Provider:
     """
     Settings for providers.
@@ -44,10 +43,13 @@ class Provider:
         pre_route=True,
         fallback=None,
         emergency=("110", "112"),
+        rtp="pub",
         a_in=None,
         b_in=None,
         a_out=None,
         b_out=None,
+
+        **kw,
     ):
         if port is None:
             port = 5061 if transport == "tls" else 5060
@@ -78,6 +80,7 @@ class Provider:
         self.emergency = emergency
         self.default = default
         self.routes = route
+        self.rtp = rtp
         self.a_in = a_in
         self.b_in = b_in
         self.a_out = a_out
@@ -111,7 +114,11 @@ class Provider:
         _SHV[f"prov__{self.name}__addr"] = val
 
     def route(self, nr: str) -> tuple[str, str] | None:
+        """
+        Dedicated routing on the source provider
+        """
         for f in self.routes:
+            matcher = getattr(self,f"route_{f['use']}") if "use" in f else match
             r = match(f, nr)
             if r is not None:
                 return r

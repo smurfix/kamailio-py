@@ -26,17 +26,20 @@ except ImportError:
     var = None
 
 
-class ZoomWrapper:
-    shvPrefix = "zoom_"
+class ZoomProvider(_Provider):
 
-    def __init__(self, cfg, _debug=False):
-        self.cfg = cfg
+    def __init__(self, auth_url=None, cred=None, update=0, known=(), **kw):
+        super().__init__(**kw)
 
         self.numByNr = {}
         self.numById = {}
         self.numUnseen = set()
+        self._known = known
+        self._shvPrefix = f"_{self.name}_"
+        self._update=update
 
-        self._debug = _debug
+        self._auth_url = auth_url
+        self._cred = cred
 
     def updateNumber(self, nr):
         try:
@@ -46,7 +49,7 @@ class ZoomWrapper:
         else:
             del self.numByNr[onr.number]
             if var is not None:
-                del var.SHV[self.shvPrefix + onr.number]
+                del var.SHV[self._shvPrefix + onr.number]
 
         if not nr.carrier or nr.carrier.name != "BYOC":
             return
@@ -54,7 +57,7 @@ class ZoomWrapper:
         self.numByNr[nr.number] = nr
         self.numById[nr.id] = nr
         if var is not None:
-            var.SHV[self.shvPrefix + nr.number] = nr.assignee is not None
+            var.SHV[self._shvPrefix + nr.number] = nr.assignee is not None
         self.numUnseen.discard(nr.id)
 
     async def updateNumbers(self):
@@ -100,7 +103,7 @@ class ZoomWrapper:
 
 
     async def refresh_token(self, task_status=trio.TASK_STATUS_IGNORED):
-        cred = self.cfg["zoom"]["cred"]
+        cred = self._cred
         data = {
             "grant_type": "account_credentials",
             "account_id": cred["account"],
@@ -109,7 +112,7 @@ class ZoomWrapper:
         while True:
             logger.info("Start: update auth")
             response = await self.sess.post(
-                self.cfg["zoom"]["url"],
+                self._auth_url,
                 auth = httpx.BasicAuth(username=cred["client"], password=cred["secret"]),
                 data=data,
             )
