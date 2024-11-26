@@ -342,6 +342,20 @@ class VAR(_sub):
 VAR = VAR()
 
 
+class DLG(_sub):
+    what_ = "dlg"
+
+
+DLG = DLG()
+
+
+class DLG_CTX(_sub):
+    what_ = "dlg_ctx"
+
+
+DLG_CTX = DLG_CTX()
+
+
 class UAC_REQ(_sub):
     what_ = "uac_req"
 
