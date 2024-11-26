@@ -527,7 +527,7 @@ class Kamailio:
                 opt = "RTP/SAVP" if enc else "RTP/AVP"
                 opt = f"{opt} {src_opt} {dst_opt}"
 
-                if KSR.nathelper.nat_uac_test(8):
+                if hasattr(KSR, "nathelper") and KSR.nathelper.nat_uac_test(8):
                     # SIP-source-address
                     opt = f"trust-address replace-origin replace-session-connection {opt}"
                 else:
@@ -535,7 +535,7 @@ class Kamailio:
                 self.log.debug("RTP engine: %s", opt)
                 KSR.rtpengine.rtpengine_manage(opt)
             else:
-                if KSR.nathelper.nat_uac_test(8):
+                if hasattr(KSR, "nathelper") and KSR.nathelper.nat_uac_test(8):
                     KSR.rtpproxy.rtpproxy_manage("co")
                 else:
                     KSR.rtpproxy.rtpproxy_manage("cor")
@@ -547,7 +547,8 @@ class Kamailio:
 
         if KSR.siputils.is_reply() > 0:
             if KSR.isbflagset(FLB_NATB):
-                KSR.nathelper.set_contact_alias()
+                if hasattr(KSR, "nathelper"):
+                    KSR.nathelper.set_contact_alias()
 
         return 1
 
@@ -557,7 +558,8 @@ class Kamailio:
         """
         msg  # noqa:B018
         if not KSR.isdsturiset():
-            KSR.nathelper.handle_ruri_alias()
+            if hasattr(KSR, "nathelper"):
+                KSR.nathelper.handle_ruri_alias()
 
         return 1
 
