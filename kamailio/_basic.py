@@ -310,6 +310,10 @@ class Kamailio:
             PV.fn = src.display
 
         PV.td = dst.domain
+
+        XAVU1.srcif = src.rtp
+        XAVU1.dstif = dst.rtp
+
         return 1
 
     # wrapper around tm relay function
@@ -554,9 +558,25 @@ class Kamailio:
 
                 if hasattr(KSR, "nathelper") and KSR.nathelper.nat_uac_test(8):
                     # SIP-source-address
-                    opt = f"trust-address replace-origin replace-session-connection {opt}"
+                    opt = f"replace-origin replace-session-connection {opt}"
+
                 else:
                     opt = f"replace-origin replace-session-connection {opt}"
+
+                ri = PV.Ri
+                si = PV.si
+                self.log.debug("NAT %s %s %s",ri,si, DLG.callid)
+
+                try:
+                    si = XAVU1.srcif
+                    di = XAVU1.dstif
+                except KeyError:
+                    self.log.warning("RTP engine: NO XAVU")
+                else:
+                    if KSR.siputils.is_request() > 0:
+                        opt += f" via-branch=auto direction={si} direction={di}"
+                    else:
+                        opt += f" via-branch=2 direction={di} direction={si}"
                 self.log.debug("RTP engine: %s", opt)
                 KSR.rtpengine.rtpengine_manage(opt)
             else:
